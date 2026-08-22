@@ -1,7 +1,28 @@
 # Context-Aware Adaptive Cricket Ball Intelligence System
 
-## Project Structure
-```
+A research-oriented AIML framework for understanding, modelling and predicting cricket-ball behaviour by combining ball-tracking data with **bowler characteristics, release geometry, pitch conditions, venue, weather, ball type, ball age and evolving ball-state information**.
+
+The system is designed around one central question:
+
+> **Can cricket-ball behaviour be predicted more accurately when the AI understands not only where the ball was released and where it travelled, but also who bowled it, how it was released, what state the ball was in, and the conditions under which it was delivered?**
+
+Unlike a conventional ball-tracking system whose primary objective is to reconstruct the observed trajectory, this project focuses on building an **adaptive intelligence layer around the trajectory**.
+
+The system attempts to estimate:
+
+> **What should this delivery have looked like under the current conditions?**
+
+and then compares that expectation with:
+
+> **What actually happened?**
+
+The difference between the expected and observed behaviour becomes a useful signal for trajectory analysis, unusual-delivery detection and downstream decision assistance.
+
+---
+
+# Project Structure
+
+```text
 cric/
 ├── run_pipeline.py              ← Master run script (start here)
 ├── src/
@@ -10,7 +31,7 @@ cric/
 │   │   ├── hawkeye_ingest.py    ← MODULE 1-A: Load + clean all 6 HawkeyeStats CSVs
 │   │   ├── cricsheet_join.py    ← MODULE 1-D: Venue/date join from CricSheet
 │   │   ├── weather_fetch.py     ← MODULE 1-E: Open-Meteo weather API
-│   │   └── master_dataset.py   ← MODULE 1-H: Pipeline orchestrator
+│   │   └── master_dataset.py    ← MODULE 1-H: Pipeline orchestrator
 │   ├── features/
 │   │   ├── bowler_profiles.py  ← MODULE 1-C: Bowler career profile features
 │   │   └── ball_state.py       ← MODULE 1-G: Ball-state rolling features
@@ -47,101 +68,3 @@ cric/
 └── datasets/                    ← Raw data (git-cloned repos)
     ├── hawkeye_stats/           ← 6 HawkeyeStats CSV files
     └── cric360/                 ← Cric360 broadcast images
-```
-
-## Quick Start
-
-### 1. Full Pipeline (requires internet for CricSheet + weather)
-```bash
-py run_pipeline.py
-```
-
-### 2. Offline Mode (skip CricSheet + weather API)
-```bash
-py run_pipeline.py --offline
-```
-
-### 3. Data Preparation Only
-```bash
-py run_pipeline.py --data-only --offline
-```
-
-### 4. Models Only (data already prepared)
-```bash
-py run_pipeline.py --models-only
-```
-
-### 5. Launch Research Dashboard
-```bash
-py run_pipeline.py --dashboard
-# OR directly:
-py -m streamlit run src/dashboard/dashboard.py
-```
-
-## Dataset Summary
-
-| Dataset | Rows | Source |
-|---|---|---|
-| mensIPLHawkeyeStats.csv | 149,424 | HawkeyeStats GitHub |
-| mensODIHawkeyeStats.csv | 439,105 | HawkeyeStats GitHub |
-| mensTestHawkeyeStats.csv | 527,165 | HawkeyeStats GitHub |
-| womensIPLHawkeyeStats.csv | 2,096 | HawkeyeStats GitHub |
-| womensODIHawkeyeStats.csv | 9,403 | HawkeyeStats GitHub |
-| womensTestHawkeyeStats.csv | 3,909 | HawkeyeStats GitHub |
-| **Total** | **1,131,102** | |
-| Valid trajectory rows | 792,366 | Derived |
-| Wide deliveries | 15,648 | Labeled |
-| No-ball deliveries | 3,290 | Labeled |
-
-## Research Experiments
-
-| # | Experiment | File |
-|---|---|---|
-| 1 | Context-Free vs Context-Aware | `trajectory_models.py` |
-| 2 | Physics vs ML vs Physics+ML | `trajectory_models.py` |
-| 3 | Ball age contribution | `ablation_study.py` |
-| 4 | Ball state contribution | `ablation_study.py` |
-| 5 | Weather contribution | `ablation_study.py` |
-| 6 | Pitch/venue contribution | `ablation_study.py` |
-| 7 | Cross-venue generalization | `trajectory_models.py` |
-| 8 | Ball-age split | `trajectory_models.py` |
-| 9 | Delivery classification | `trajectory_models.py` |
-| 10 | Anomaly detection | `anomaly_detection.py` |
-| 11 | Wide-ball decision assistance | `wide_ball_model.py` |
-| 12 | Bowler profiling contribution | `ablation_study.py` |
-
-## Key Technical Decisions
-- **Match-level splits**: Never split at delivery level to prevent set contamination
-- **Bowler profiles from training split only**: Prevents data leakage
-- **Rolling features use .shift(1)**: No current-delivery information in rolling stats
-- **NULL/NaN explicit**: Missing fields are never fabricated
-- **Physics residuals**: Actual − physics prediction is the core anomaly signal
-
-## 🚀 The Live AI Engine & Chrome Extension
-This project is not just a research repository—it features a live, production-ready AI Engine that runs alongside a Google Chrome Extension, allowing you to get real-time tactical predictions overlaid directly on live matches on Cricbuzz!
-
-### 1. The Production API Backend (`src/api/`)
-The brain of the system is a highly scalable FastAPI microservice.
-- **Contextual Memory**: Powered by a PostgreSQL database (`src/api/database.py`), the AI remembers every ball a bowler has bowled in their current spell (Over History), allowing it to detect patterns and adapt its predictions.
-- **Tactical Recommender**: The AI dictates the optimal **Bowling Angle**, **Pace**, and **Field Settings** based on live match variables.
-- **Enterprise Security**: The API is protected by Redis-backed rate limiting (`fastapi-limiter`) to ensure high availability and prevent spam.
-
-### 2. The Chrome Extension (`src/extension/`)
-A live tactical overlay that injects itself directly into the Cricbuzz commentary feed.
-- **Installation**: Go to `chrome://extensions/` in Google Chrome, enable "Developer mode", click "Load unpacked", and select the `src/extension/` folder.
-- **How it Works**: The extension scrapes live match data (bowler, batter, score, dew factor, last ball commentary) from the DOM, fires it to the FastAPI backend, and renders a sleek, animated "⚡ AI EXECUTION PLAN" card right in the browser.
-- **Features**: Visualizes optimal pitch heatmaps, required run-rate pressure indexes, and AI-driven bowling angles!
-
-### 3. Deployment & Load Balancing (Docker)
-The backend is completely containerized and ready for massive scale.
-To launch the entire enterprise architecture on any server:
-```bash
-# 1. Rename .env.example to .env and insert your secure database password
-# 2. Boot the cluster!
-docker-compose up -d --build
-```
-This single command spins up:
-1. An **Nginx** Reverse Proxy / Load Balancer.
-2. A **PostgreSQL** Database for shared cross-worker memory.
-3. A **Redis** cluster for rate limiting.
-4. Multiple **FastAPI (Uvicorn/Gunicorn)** microservice workers serving predictions concurrently!
