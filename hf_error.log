@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\HP\Documents\cric\src\api\main.py", line 17, in <module>
+    qa_pipeline = pipeline("text-generation", model="google/flan-t5-small")
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python313\Lib\site-packages\transformers\pipelines\__init__.py", line 954, in pipeline
+    task = get_task(model, token)
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python313\Lib\site-packages\transformers\pipelines\__init__.py", line 314, in get_task
+    raise RuntimeError(
+        f"The model {model} does not seem to have a correct `pipeline_tag` set to infer the task automatically"
+    )
+RuntimeError: The model google/flan-t5-small does not seem to have a correct `pipeline_tag` set to infer the task automatically

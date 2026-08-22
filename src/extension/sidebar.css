@@ -1,0 +1,514 @@
+/* sidebar.css - Broadcast-Grade AI Companion */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap');
+
+#cric-ai-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    z-index: 999999;
+    width: 420px;
+    height: 100vh;
+    overflow-y: hidden;
+    box-sizing: border-box;
+    
+    /* Clean, matte slate background */
+    background: #111827;
+    border-left: 1px solid #374151;
+    
+    color: #f3f4f6;
+    font-family: 'Roboto', sans-serif;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 20px;
+    box-sizing: border-box;
+    box-shadow: -10px 0 30px rgba(0,0,0,0.8);
+}
+
+#cric-ai-panel::-webkit-scrollbar { width: 6px; }
+#cric-ai-panel::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+
+.cric-ai-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #1f2937;
+    padding-bottom: 16px;
+    margin-bottom: 20px;
+}
+
+#cric-ai-close:hover { color: #ef4444; transform: scale(1.1); }
+
+.cric-ai-card {
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.cric-ai-title-sm {
+    font-size: 11px;
+    color: #9ca3af;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #374151;
+    padding-bottom: 6px;
+}
+
+.cric-ai-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 14px;
+    color: #d1d5db;
+}
+
+.cric-ai-hidden { display: none !important; }
+
+.cric-ai-pill {
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.cric-ai-green { background: #065f46; color: #34d399; }
+.cric-ai-red { background: #7f1d1d; color: #f87171; }
+.cric-ai-blue { background: #1e3a8a; color: #60a5fa; }
+
+/* Modern Chatbot UI */
+.cric-chat-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin-top: 16px;
+    background: #1f2937;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    overflow: hidden;
+    height: 250px;
+}
+
+.cric-chat-header {
+    background: #111827;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid #374151;
+}
+
+.cric-chat-history {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cric-chat-history::-webkit-scrollbar { width: 4px; }
+.cric-chat-history::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+
+.chat-bubble {
+    max-width: 85%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.bot-bubble {
+    background: #374151;
+    color: #f3f4f6;
+    align-self: flex-start;
+    border-bottom-left-radius: 4px;
+}
+
+.user-bubble {
+    background: #2563eb;
+    color: #ffffff;
+    align-self: flex-end;
+    border-bottom-right-radius: 4px;
+}
+
+.cric-chat-input-area {
+    display: flex;
+    padding: 10px;
+    background: #111827;
+    border-top: 1px solid #374151;
+    gap: 8px;
+    align-items: center;
+}
+
+.cric-chat-input {
+    flex: 1;
+    background: #374151;
+    border: 1px solid #4b5563;
+    border-radius: 20px;
+    padding: 8px 14px;
+    color: #f3f4f6;
+    font-size: 13px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.cric-chat-input:focus {
+    border-color: #60a5fa;
+}
+
+.cric-chat-btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.cric-chat-btn:hover {
+    background: #1d4ed8;
+    transform: scale(1.05);
+}
+
+.cric-ai-yellow { background: #78350f; color: #fbbf24; }
+
+/* ISOMETRIC PITCH VIEW */
+.cric-ai-pitch-container {
+    perspective: 800px;
+    margin: 30px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.cric-ai-pitch {
+    width: 140px;
+    height: 280px;
+    background: #84cc9a; /* Turf green */
+    border: 2px solid #fff;
+    position: relative;
+    /* Sideways isometric tilt */
+    transform: rotateX(60deg) rotateZ(-30deg);
+    transform-style: preserve-3d;
+    box-shadow: -10px 10px 20px rgba(0,0,0,0.5);
+}
+
+/* Crease lines */
+.crease-batting {
+    position: absolute;
+    bottom: 25px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #fff;
+}
+.crease-bowling {
+    position: absolute;
+    top: 25px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: #fff;
+}
+
+.stumps-container {
+    position: absolute;
+    bottom: -15px; /* Adjust for isometric upright */
+    left: 50%;
+    transform: translateX(-50%) rotateX(-90deg); /* Stand upright */
+    transform-origin: bottom center;
+    display: flex;
+    gap: 4px;
+    height: 40px;
+}
+
+.stump {
+    width: 4px;
+    height: 100%;
+    background: #fef08a;
+    border: 1px solid #ca8a04;
+}
+
+.ball {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background: #ef4444;
+    border-radius: 50%;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+    /* Default variables for JS */
+    --start-x: 50%;
+    --start-y: 5%;
+    --pitch-x: 50%;
+    --pitch-y: 60%;
+    --end-x: 50%;
+    --end-y: 95%;
+    
+    transform: translate(-50%, -50%) translateZ(10px);
+}
+
+@keyframes isoTrajectory {
+    0% {
+        left: var(--start-x);
+        top: var(--start-y);
+        transform: translate(-50%, -50%) translateZ(40px) scale(0.6);
+    }
+    40% {
+        left: var(--pitch-x);
+        top: var(--pitch-y);
+        /* Hits the ground (Z=0) */
+        transform: translate(-50%, -50%) translateZ(0px) scale(0.9);
+    }
+    100% {
+        left: var(--end-x);
+        top: var(--end-y);
+        transform: translate(-50%, -50%) translateZ(25px) scale(1.2);
+    }
+}
+
+.ball-predictive {
+    background: #3b82f6; /* Ghostly Blue */
+    box-shadow: 0 0 12px #60a5fa, 2px 2px 5px rgba(0,0,0,0.5);
+}
+
+@keyframes isoTrajectoryPredictive {
+    0% {
+        left: var(--start-x);
+        top: var(--start-y);
+        transform: translate(-50%, -50%) translateZ(40px) scale(0.6);
+        opacity: 0.2;
+    }
+    40% {
+        left: var(--pitch-x);
+        top: var(--pitch-y);
+        /* Hits the ground (Z=0) */
+        transform: translate(-50%, -50%) translateZ(0px) scale(0.9);
+        opacity: 1;
+    }
+    100% {
+        left: var(--end-x);
+        top: var(--end-y);
+        transform: translate(-50%, -50%) translateZ(25px) scale(1.2);
+        opacity: 0.2;
+    }
+}
+
+.history-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    left: var(--pitch-x);
+    top: var(--pitch-y);
+    transform: translate(-50%, -50%) translateZ(1px);
+    box-shadow: 0 0 5px rgba(255,255,255,0.4);
+    z-index: 5;
+}
+
+/* Tactical Field Map */
+.cric-field-ground {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    background: #166534; /* Dark grass green */
+    border: 2px solid #fff;
+    border-radius: 50%;
+    margin-top: 15px;
+    overflow: hidden;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+}
+
+.cric-field-pitch {
+    position: absolute;
+    width: 15%;
+    height: 30%;
+    background: #d4d4d8;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid #71717a;
+}
+
+.fielder-dot {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #60a5fa; /* Blue team color */
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 4px #000;
+    transition: all 0.5s ease-in-out;
+}
+
+.fielder-moved {
+    background: #fde047; /* Yellow highlight */
+    box-shadow: 0 0 10px #facc15, 0 0 20px #eab308;
+    animation: pulse-fielder 1.5s infinite;
+}
+
+@keyframes pulse-fielder {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.5); opacity: 0.8; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+ /* Post-Ball Evaluation UI */
+.cric-eval-card {
+    background: #111827;
+    border: 1px solid #4b5563;
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+    border-left: 4px solid #f59e0b;
+}
+
+/* Post-Match Cinematic Overlay */
+#cric-post-match-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(17, 24, 39, 0.65);
+    backdrop-filter: blur(5px);
+    z-index: 9999999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 20px;
+}
+
+.cric-pm-title {
+    font-size: 32px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #fff;
+    margin-bottom: 25px;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 10px;
+}
+
+.cric-pm-dashboard {
+    display: flex;
+    gap: 30px;
+    width: 90%;
+    max-width: 1400px;
+    height: 60vh;
+}
+
+.cric-pm-panel {
+    flex: 1;
+    background: rgba(31, 41, 55, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 25px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+}
+
+.cric-pm-panel h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #34d399;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.cum-pitch-dot {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%) translateZ(2px);
+    box-shadow: 0 0 8px currentColor;
+    opacity: 0.85;
+}
+
+.cric-pm-stat-box {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.cric-pm-stat-title {
+    color: #9ca3af;
+    font-size: 13px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+#cric-pm-close {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    font-size: 40px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: 0.2s;
+}
+#cric-pm-close:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* Wagon Wheel */
+.wagon-wheel-container {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background: #166534;
+    border: 2px solid #fff;
+    position: relative;
+    overflow: hidden;
+}
+
+.wagon-wheel-pitch {
+    position: absolute;
+    width: 15px;
+    height: 30px;
+    background: #d4d4d8;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.wagon-spoke {
+    position: absolute;
+    width: 50%;
+    height: 2px;
+    background: #fff;
+    left: 50%;
+    top: 50%;
+    transform-origin: 0% 50%;
+    opacity: 0.8;
+}
+
+.wagon-four { background: #3b82f6; height: 3px; z-index: 2;}
+.wagon-six { background: #facc15; height: 3px; z-index: 2;}
+.wagon-single { background: #9ca3af; height: 1px; z-index: 1;}

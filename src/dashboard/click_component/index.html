@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.jsdelivr.net/npm/streamlit-component-lib@1.3.0/dist/streamlit.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: #0f0f28; /* Matches dashboard plot_bgcolor */
+      font-family: sans-serif;
+    }
+    .container {
+      position: relative;
+      width: 100%;
+      height: 350px;
+      /* Using an inline SVG to guarantee rendering without network requests */
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23111827' /%3E%3Cstop offset='100%25' stop-color='%231f2937' /%3E%3C/linearGradient%3E%3ClinearGradient id='pitch' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23374151' /%3E%3Cstop offset='100%25' stop-color='%234b5563' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='600' height='400' fill='url(%23bg)' /%3E%3Cpath d='M 150 400 L 250 150 L 350 150 L 450 400 Z' fill='url(%23pitch)' /%3E%3Cline x1='100' y1='320' x2='500' y2='320' stroke='white' stroke-width='4' opacity='0.8' /%3E%3Cline x1='200' y1='150' x2='400' y2='150' stroke='white' stroke-width='2' opacity='0.6' /%3E%3Crect x='288' y='220' width='6' height='100' fill='%23f59e0b' rx='2' /%3E%3Crect x='297' y='220' width='6' height='100' fill='%23f59e0b' rx='2' /%3E%3Crect x='306' y='220' width='6' height='100' fill='%23f59e0b' rx='2' /%3E%3Cline x1='288' y1='220' x2='312' y2='220' stroke='white' stroke-width='3' /%3E%3Cpath d='M 300 220 Q 280 180 320 120 Q 360 80 340 60 Q 330 50 310 70 L 290 120 Z' fill='rgba(255,255,255,0.05)' /%3E%3Ctext x='300' y='40' fill='rgba(255,255,255,0.3)' font-family='sans-serif' font-size='20' font-weight='bold' text-anchor='middle' letter-spacing='2'%3EFRONT-ON STUMP VIEW%3C/text%3E%3C/svg%3E");
+      background-size: cover;
+      background-position: center top;
+      cursor: crosshair;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-sizing: border-box;
+    }
+    .marker {
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background-color: rgba(0, 212, 255, 0.8);
+      border: 2px solid white;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 0 10px rgba(0,212,255,0.8);
+      transition: top 0.1s, left 0.1s;
+    }
+    .grid-line-v {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+    }
+    .grid-line-h {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 10%; /* Ground level approximation */
+      height: 1px;
+      background: rgba(255, 255, 255, 0.2);
+      pointer-events: none;
+    }
+    .instruction {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="box">
+    <div class="grid-line-v"></div>
+    <div class="grid-line-h"></div>
+    <div class="instruction">CLICK to pin Release Point</div>
+    <div class="marker" id="marker" style="display: none;"></div>
+  </div>
+
+  <script>
+    const box = document.getElementById('box');
+    const marker = document.getElementById('marker');
+    
+    // Default calibration values (can be updated via args)
+    let min_x = -1.5;
+    let max_x = 1.5;
+    let min_z = 0.0;
+    let max_z = 2.8;
+
+    function onRender(event) {
+      const data = event.detail.args;
+      
+      // If Streamlit passes default coordinates on load
+      if (data && data.default_x !== undefined && data.default_z !== undefined) {
+          const rect = box.getBoundingClientRect();
+          // Map physical back to pixel
+          const px_x = ((data.default_x - min_x) / (max_x - min_x)) * rect.width;
+          const px_y = rect.height - (((data.default_z - min_z) / (max_z - min_z)) * rect.height);
+          
+          marker.style.left = px_x + 'px';
+          marker.style.top = px_y + 'px';
+          marker.style.display = 'block';
+      }
+      Streamlit.setFrameHeight(350);
+    }
+    
+    Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, onRender);
+    Streamlit.setComponentReady();
+    Streamlit.setFrameHeight(350);
+
+    box.addEventListener('click', function(e) {
+      const rect = box.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      marker.style.left = x + 'px';
+      marker.style.top = y + 'px';
+      marker.style.display = 'block';
+
+      // Map Pixel (0 to width) -> Physical X (-1.5 to 1.5)
+      const physical_x = min_x + (x / rect.width) * (max_x - min_x);
+      
+      // Map Pixel Y (0 to height, inverted) -> Physical Z (2.8 to 0)
+      const physical_z = min_z + ((rect.height - y) / rect.height) * (max_z - min_z);
+      
+      // Send data back to Streamlit script
+      Streamlit.setComponentValue({
+          x: parseFloat(physical_x.toFixed(3)), 
+          z: parseFloat(physical_z.toFixed(3))
+      });
+    });
+  </script>
+</body>
+</html>

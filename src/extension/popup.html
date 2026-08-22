@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cricket AI Predictor</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <div class="title">🏏 Live AI Companion</div>
+  </div>
+
+  <div class="card" id="context-card">
+    <h3>Auto-Detected Context</h3>
+    <div class="status-row">
+      <span class="label">Bowler:</span> <span id="val-bowler">Detecting...</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Batter:</span> <span id="val-batter">Detecting...</span>
+    </div>
+    <div class="status-row">
+      <span class="label">Pressure:</span> <span id="val-pressure">-- / 100</span>
+    </div>
+  </div>
+
+  <button id="btn-predict" disabled>Awaiting Context...</button>
+
+  <div id="results" style="display:none;">
+    <div class="card">
+      <h3>Umpire Assistance</h3>
+      <div class="decision-row">
+        <span class="badge" id="wide-badge">LEGAL</span>
+        <span id="wide-prob">90% Confidence</span>
+      </div>
+      <p class="explanation" id="wide-exp">Reasoning...</p>
+    </div>
+
+    <div class="card">
+      <h3>Hawkeye LBW Tracker</h3>
+      <div class="tracker-box">
+        <div class="tracker-row"><span class="label">PITCHING</span> <span id="lbw-pitch" class="val-green">IN LINE</span></div>
+        <div class="tracker-row"><span class="label">IMPACT</span> <span id="lbw-impact" class="val-green">IN LINE</span></div>
+        <div class="tracker-row"><span class="label">WICKETS</span> <span id="lbw-wkt" class="val-red">MISSING</span></div>
+      </div>
+      <p class="explanation" id="lbw-exp">Explanation...</p>
+    </div>
+    
+    <div class="card">
+      <h3>Reality Check (Feedback)</h3>
+      <p style="font-size: 11px; margin-bottom:8px;">Did the umpire make a different call?</p>
+      <button id="btn-wrong" class="btn-secondary">Report Incorrect Prediction</button>
+      <div id="feedback-msg" style="display:none; color: #00d4ff; font-size: 12px; margin-top:8px;">Logged for retraining!</div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

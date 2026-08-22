@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Cricket AI: Live Predictor",
+  "version": "1.0",
+  "description": "Live AI Companion for Cricket. Predicts Trajectories and Wides automatically.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://*.espncricinfo.com/*",
+    "https://*.cricbuzz.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://*.espncricinfo.com/*", "https://*.cricbuzz.com/*"],
+      "js": ["content.js"],
+      "css": ["sidebar.css"]
+    }
+  ]
+}
