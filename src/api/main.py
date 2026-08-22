@@ -522,7 +522,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
         "bowler_analytics": analytics,
         "evaluation": eval_text,
         "expected_field": field_pred,
-        "over_history": over_history_state["balls"],
+        "over_history": balls_list,
         "situational_plan": game_plan,
         "field_map": f_map
     }
