@@ -195,6 +195,19 @@ function injectSidebar() {
                         <span style="font-weight:700;">Expected Delivery:</span>
                         <span id="pred-type" class="cric-ai-pill cric-ai-blue">...</span>
                     </div>
+                    
+                    <div class="cric-ai-row">
+                        <span style="font-weight:700;">Batter Intent:</span>
+                        <span id="batter-intent" class="cric-intent-badge intent-def">Loading...</span>
+                    </div>
+                    
+                    <div class="cric-xw-container">
+                        <div class="cric-xw-fill" id="xw-bar"></div>
+                    </div>
+                    <div class="cric-xw-text">
+                        <span>Expected Wicket (xW)</span>
+                        <span id="xw-val" style="font-weight:bold;">--%</span>
+                    </div>
                     <div class="cric-ai-row">
                         <span style="font-weight:700;">Confidence:</span>
                         <span id="pred-conf" class="cric-ai-pill cric-ai-green">...</span>
@@ -202,6 +215,12 @@ function injectSidebar() {
                     
                     <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; font-size:12px; border-left:3px solid #00e676; margin-top:12px;">
                         <strong style="color:#00e676;">⚡ AI EXECUTION PLAN:</strong><br>
+                        
+                        <!-- 2D Canvas Map here -->
+                        <div id="cric-pitch-container">
+                            <canvas id="cric-pitch-canvas" width="300" height="140"></canvas>
+                        </div>
+                        
                         <div style="margin-top:4px; display:flex; justify-content:space-between;">
                             <span style="color:#a3a3a3;">Angle:</span> <strong id="pred-angle" style="color:#fff; text-align:right;">...</strong>
                         </div>
@@ -357,6 +376,75 @@ function injectSidebar() {
                 if (data.rec_angle) document.getElementById('pred-angle').innerText = data.rec_angle;
                 if (data.rec_pace) document.getElementById('pred-pace').innerText = data.rec_pace;
                 if (data.field_pred) document.getElementById('pred-field').innerText = data.field_pred;
+                
+                // Intent & xW mapping
+                if (data.batter_intent) {
+                    const intentEl = document.getElementById('batter-intent');
+                    intentEl.innerText = data.batter_intent.split('(')[0].trim();
+                    if (data.batter_intent.includes('Aggressive') || data.batter_intent.includes('Attacking')) {
+                        intentEl.className = 'cric-intent-badge intent-agg';
+                    } else {
+                        intentEl.className = 'cric-intent-badge intent-def';
+                    }
+                }
+                
+                if (data.xw) {
+                    document.getElementById('xw-val').innerText = data.xw.toFixed(1) + '%';
+                    document.getElementById('xw-bar').style.width = data.xw + '%';
+                }
+                
+                // 2D HTML5 Canvas Target Drawer
+                if (data.rec_x !== undefined && data.rec_y !== undefined) {
+                    const canvas = document.getElementById('cric-pitch-canvas');
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        
+                        // Draw Pitch background
+                        ctx.fillStyle = '#1f2937';
+                        ctx.fillRect(40, 10, 220, 120);
+                        
+                        // Draw Crease lines
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(40, 20); ctx.lineTo(260, 20); // Bowling Crease
+                        ctx.moveTo(40, 120); ctx.lineTo(260, 120); // Batting Crease
+                        ctx.moveTo(150, 10); ctx.lineTo(150, 130); // Center line
+                        ctx.stroke();
+                        
+                        // Draw Stumps
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.fillRect(145, 118, 2, 4);
+                        ctx.fillRect(149, 118, 2, 4);
+                        ctx.fillRect(153, 118, 2, 4);
+                        
+                        // Calculate coordinates (API: x=0-100, y=0-100)
+                        // x=0 is left (width: 40 to 260) -> 220 pixels
+                        // y=0 is bowling crease (height: 20 to 120) -> 100 pixels
+                        const drawX = 40 + (data.rec_x / 100) * 220;
+                        const drawY = 20 + (data.rec_y / 100) * 100;
+                        
+                        // Draw Glowing Crosshair
+                        ctx.beginPath();
+                        ctx.arc(drawX, drawY, 8, 0, 2 * Math.PI);
+                        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)'; // Red glow
+                        ctx.fill();
+                        
+                        ctx.beginPath();
+                        ctx.arc(drawX, drawY, 3, 0, 2 * Math.PI);
+                        ctx.fillStyle = '#ef4444'; // Solid Red Core
+                        ctx.fill();
+                        
+                        ctx.beginPath();
+                        ctx.moveTo(drawX - 12, drawY);
+                        ctx.lineTo(drawX + 12, drawY);
+                        ctx.moveTo(drawX, drawY - 12);
+                        ctx.lineTo(drawX, drawY + 12);
+                        ctx.strokeStyle = '#ef4444';
+                        ctx.stroke();
+                    }
+                }
                 
                 // Map Tactical Field Radar
                 if (data.field_map) {
