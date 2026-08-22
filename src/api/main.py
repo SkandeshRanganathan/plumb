@@ -278,13 +278,15 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     off_mult = 1 if delivery.right_bat else -1 # +X is off-side for RHB in this system
     
     # Ultimate Tactical Engine Initialization
+    is_spin = not ("FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style)
+    
     rec_angle = "Over the wicket"
-    rec_pace = "Standard Effort (135km/h)"
+    rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Effort (135km/h)"
     field_pred = "Standard field setting"
     
     if delivery.format == "T20":
         if delivery.pressure_index > 70:
-            if "FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style:
+            if not is_spin:
                 if delivery.dew_pct > 60:
                     pred_type = "Hard Length / Into the Pitch"
                     conf = "90%"
@@ -316,7 +318,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                 exp = "Building pressure. AI recommends consistently hitting the top of off stump."
                 next_anim.update({"pitch_x": 40, "pitch_y": 65, "end_x": 40, "end_y": 85})
                 rec_angle = "Over the wicket"
-                rec_pace = "Standard Line & Length (135km/h)"
+                rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Line & Length (135km/h)"
                 field_pred = "Classic Test Match field. Slips in place, saving the single in the ring."
     else: # Test / ODI
         if delivery.wickets < 3 and delivery.req_rate < 5.0:
@@ -325,7 +327,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             exp = "Early innings in longer format. Bowl in the channel of uncertainty. Invite the drive."
             next_anim.update({"pitch_x": 35, "pitch_y": 65, "end_x": 30, "end_y": 85})
             rec_angle = "Over the wicket"
-            rec_pace = "Swing Pace (132km/h)"
+            rec_pace = "Flighted Delivery (78km/h)" if is_spin else "Swing Pace (132km/h)"
             field_pred = "3 Slips and a Gully. Attacking field to find the edge."
         elif delivery.wickets >= 7:
             pred_type = "Toe-Crushing Yorker"
@@ -333,7 +335,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             exp = "Tailenders at the crease. Attack the stumps with pace and full length."
             next_anim.update({"pitch_x": 50, "pitch_y": 90, "end_x": 50, "end_y": 85})
             rec_angle = "Around the wicket"
-            rec_pace = "Effort Ball (145km/h)"
+            rec_pace = "Flat and Fast (95km/h)" if is_spin else "Effort Ball (145km/h)"
             field_pred = "Short Leg and Leg Slip in place to intimidate, but bowling full."
         else:
             pred_type = "Good Length, Tight Line"
@@ -341,7 +343,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             exp = "Middle phase. Dry up the runs by bowling stump-to-stump."
             next_anim.update({"pitch_x": 50, "pitch_y": 65, "end_x": 50, "end_y": 85})
             rec_angle = "Over the wicket"
-            rec_pace = "Stock Delivery (135km/h)"
+            rec_pace = "Stock Spin (85km/h)" if is_spin else "Stock Delivery (135km/h)"
             field_pred = "Standard field setting"
         
     # Remove the generic field_pred logic here since we handled it above

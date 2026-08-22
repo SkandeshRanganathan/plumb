@@ -711,14 +711,15 @@ if page == "Live Delivery Analysis":
             
             # --- NEXT BALL TACTICAL PREDICTOR ---
             off_mult = 1 if right_bat else -1  # +X (Left) is the Off-Side for a Right Hand Batter
+            is_spin = not ("FAST" in bowling_style or "MEDIUM" in bowling_style)
             
             rec_angle = "Over the wicket"
-            rec_pace = "Standard Effort (135km/h)"
+            rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Effort (135km/h)"
             rec_field = "Standard field setting"
             
             if format_val == "T20":
                 if pressure_val > 70:
-                    if "FAST" in bowling_style or "MEDIUM" in bowling_style:
+                    if not is_spin:
                         if dew_pct > 60:
                             rec_title, rec_x, rec_y = "Hard Length / Into the Pitch", 0.0, 10.0
                             rec_desc = f"High dew ({dew_pct}%) makes yorkers extremely risky. Hit the deck hard (back-of-a-length) to avoid slipping a full toss."
@@ -741,26 +742,26 @@ if page == "Live Delivery Analysis":
                     rec_title, rec_x, rec_y = "Top of Off Stump", 0.15 * off_mult, 13.0
                     rec_desc = "Building pressure. Hit the top of off stump consistently."
                     rec_angle = "Over the wicket"
-                    rec_pace = "Standard Line & Length (135km/h)"
+                    rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Line & Length (135km/h)"
                     rec_field = "Classic Test Match field. Slips in place, saving the single in the ring."
             else: # Test / ODI
                 if wickets < 3 and req_rate < 5.0:
                     rec_title, rec_x, rec_y = "4th Stump Corridor", 0.25 * off_mult, 12.5
                     rec_desc = "Early innings in longer format. Bowl in the channel of uncertainty. Invite the drive."
                     rec_angle = "Over the wicket"
-                    rec_pace = "Swing Pace (132km/h)"
+                    rec_pace = "Flighted Delivery (78km/h)" if is_spin else "Swing Pace (132km/h)"
                     rec_field = "3 Slips and a Gully. Attacking field to find the edge."
                 elif wickets >= 7:
                     rec_title, rec_x, rec_y = "Toe-Crushing Yorker", 0.0, 19.5
                     rec_desc = "Tailenders at the crease. Attack the stumps with pace and full length."
                     rec_angle = "Around the wicket"
-                    rec_pace = "Effort Ball (145km/h)"
+                    rec_pace = "Flat and Fast (95km/h)" if is_spin else "Effort Ball (145km/h)"
                     rec_field = "Short Leg and Leg Slip in place to intimidate, but bowling full."
                 else:
                     rec_title, rec_x, rec_y = "Good Length, Tight Line", 0.05 * off_mult, 13.5
                     rec_desc = "Middle phase. Dry up the runs by bowling stump-to-stump."
                     rec_angle = "Over the wicket"
-                    rec_pace = "Stock Delivery (135km/h)"
+                    rec_pace = "Stock Spin (85km/h)" if is_spin else "Stock Delivery (135km/h)"
                     rec_field = "Standard field setting"
 
             # Overlay target on 3D Trajectory Figure
