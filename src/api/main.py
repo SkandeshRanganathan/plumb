@@ -53,10 +53,18 @@ df_main = None
 
 @app.on_event("startup")
 def load_assets():
-    global models, df_main
+    global models, df_main, batter_profiles
     print("Creating database tables...")
     Base.metadata.create_all(bind=engine)
     
+    print("Loading Batter Knowledge Base...")
+    try:
+        with open("src/data/batter_profiles.json", "r") as f:
+            batter_profiles = json.load(f)
+    except Exception as e:
+        print(f"Could not load batter profiles: {e}")
+        batter_profiles = {}
+        
     print("Loading models and data into memory...")
     
     # Load dataset for bowler profiles
@@ -283,6 +291,8 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     rec_angle = "Over the wicket"
     rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Effort (135km/h)"
     field_pred = "Standard field setting"
+    rec_x = 50.0
+    rec_y = 65.0
     
     if delivery.format == "T20":
         if delivery.pressure_index > 70:
@@ -293,7 +303,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                         pred_type = "Slower Bouncer / Into Pitch"
                         conf = "85%"
                         exp = f"High dew ({delivery.dew_pct}%) makes yorkers risky. As a medium pacer, AI recommends rolling the fingers over the ball and digging it short."
-                        next_anim.update({"pitch_x": 50, "pitch_y": 44, "end_x": 50, "end_y": 70})
+                        rec_x, rec_y = 50, 44
                         rec_angle = "Over the wicket"
                         rec_pace = "Off-Cutter (112km/h)"
                         field_pred = "Deep Square Leg and Deep Mid Wicket back. Mid-off up."
@@ -301,7 +311,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                         pred_type = "Hard Length / Into the Pitch"
                         conf = "90%"
                         exp = f"High dew ({delivery.dew_pct}%) makes yorkers extremely risky. AI recommends hitting the deck hard to avoid slipping a full toss."
-                        next_anim.update({"pitch_x": 50, "pitch_y": 40, "end_x": 50, "end_y": 70})
+                        rec_x, rec_y = 50, 40
                         rec_angle = "Over the wicket"
                         rec_pace = "Hit the Deck Hard (138km/h)"
                         field_pred = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
@@ -310,7 +320,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                         pred_type = "Wide Slower Ball"
                         conf = "87%"
                         exp = "High pressure death over. Medium pacers should use the wide slower ball out of the swinging arc."
-                        next_anim.update({"pitch_x": 30, "pitch_y": 75, "end_x": 20, "end_y": 90})
+                        rec_x, rec_y = 30, 75
                         rec_angle = "Around the wicket"
                         rec_pace = "Back-of-hand Slower Ball (115km/h)"
                         field_pred = "Deep Point and Sweeper Cover on the boundary. Fine Leg inside."
@@ -318,7 +328,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                         pred_type = "Wide Yorker"
                         conf = "88%"
                         exp = "High pressure death over. The optimal tactical play is a wide yorker to evade the swinging arc."
-                        next_anim.update({"pitch_x": 25, "pitch_y": 90, "end_x": 20, "end_y": 95})
+                        rec_x, rec_y = 25, 90
                         rec_angle = "Around the wicket" # Extreme angle
                         rec_pace = "Fast and Full (140+km/h)"
                         field_pred = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
@@ -326,7 +336,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                 pred_type = "Flatter, Outside Off"
                 conf = "80%"
                 exp = "High pressure T20. Spinners should fire it in flat outside off stump to avoid being swept."
-                next_anim.update({"pitch_x": 30, "pitch_y": 60, "end_x": 25, "end_y": 80})
+                rec_x, rec_y = 30, 60
                 rec_angle = "Around the wicket"
                 rec_pace = "Flat and Fast (95km/h)"
                 field_pred = "Long Off and Deep Point boundary riders. Catching cover in place."
@@ -335,7 +345,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                 pred_type = "Top of Off Stump"
                 conf = "75%"
                 exp = "Building pressure. AI recommends consistently hitting the top of off stump."
-                next_anim.update({"pitch_x": 40, "pitch_y": 65, "end_x": 40, "end_y": 85})
+                rec_x, rec_y = 40, 65
                 rec_angle = "Over the wicket"
                 rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Line & Length (135km/h)"
                 field_pred = "Classic Test Match field. Slips in place, saving the single in the ring."
@@ -344,7 +354,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             pred_type = "4th Stump Corridor"
             conf = "85%"
             exp = "Early innings in longer format. Bowl in the channel of uncertainty. Invite the drive."
-            next_anim.update({"pitch_x": 35, "pitch_y": 65, "end_x": 30, "end_y": 85})
+            rec_x, rec_y = 35, 65
             rec_angle = "Over the wicket"
             rec_pace = "Flighted Delivery (78km/h)" if is_spin else "Swing Pace (132km/h)"
             field_pred = "3 Slips and a Gully. Attacking field to find the edge."
@@ -352,7 +362,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             pred_type = "Toe-Crushing Yorker"
             conf = "92%"
             exp = "Tailenders at the crease. Attack the stumps with pace and full length."
-            next_anim.update({"pitch_x": 50, "pitch_y": 90, "end_x": 50, "end_y": 85})
+            rec_x, rec_y = 50, 90
             rec_angle = "Around the wicket"
             rec_pace = "Flat and Fast (95km/h)" if is_spin else "Effort Ball (145km/h)"
             field_pred = "Short Leg and Leg Slip in place to intimidate, but bowling full."
@@ -360,10 +370,36 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             pred_type = "Good Length, Tight Line"
             conf = "78%"
             exp = "Middle phase. Dry up the runs by bowling stump-to-stump."
-            next_anim.update({"pitch_x": 50, "pitch_y": 65, "end_x": 50, "end_y": 85})
+            rec_x, rec_y = 50, 65
             rec_angle = "Over the wicket"
             rec_pace = "Stock Spin (85km/h)" if is_spin else "Stock Delivery (135km/h)"
             field_pred = "Standard field setting"
+            
+    # --- RAG: BATTER PROFILE OVERRIDE ---
+    batter_name_lower = delivery.batter.lower()
+    for b_key, b_profile in batter_profiles.items():
+        if b_key.lower() in batter_name_lower or batter_name_lower in b_key.lower():
+            pred_type = f"🎯 RAG TARGET: {b_profile['tactical_override']['title']}"
+            conf = "99% (RAG Direct Match)"
+            exp = f"KNOWN WEAKNESS MATCHED: {b_profile['weakness']} Tactical override activated."
+            
+            # Map normalized JSON coordinates (-1 to 1 logic) to 0-100 API canvas coordinates
+            # API expects X (0-100, 50 is middle) and Y (0-100, 100 is stumps, 0 is bowler)
+            # Json gives X (-1 to 1, offside is positive for RH) and Y in meters (0 to 20)
+            target_x = b_profile['tactical_override']['x']
+            target_y_m = b_profile['tactical_override']['y']
+            
+            # X: 0 is center, off_mult flips it. Let's map -0.5 to 100 range:
+            rec_x = 50 + (target_x * 50 * off_mult)
+            # Y: 20m pitch. length=0 is bowler, length=20 is stumps. Map to 0-100.
+            rec_y = (target_y_m / 20.0) * 100
+            
+            rec_angle = b_profile['tactical_override']['angle']
+            rec_pace = b_profile['tactical_override']['pace']
+            field_pred = "Custom field set for specific batter weakness."
+            break
+            
+    next_anim.update({"pitch_x": rec_x, "pitch_y": rec_y, "end_x": rec_x, "end_y": rec_y + 10})
         
     # Remove the generic field_pred logic here since we handled it above
     # Base Field Map (x, y coordinates on a 0-100 percentage plane)
@@ -443,6 +479,29 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     else:
         analytics += f"⚡ Est. Pace: ~135 kph\n🎯 Primary Weapon: Seam variations"
         
+    # Batter Intent & xW
+    batter_intent = "Defensive (Rotating Strike)"
+    xw = 4.5 # base wicket probability 4.5%
+    
+    if delivery.pressure_index > 75:
+        batter_intent = "Aggressive (High chance of step-out or slog)"
+        xw += 8.0 # High pressure = high risk = high xW
+    elif delivery.pressure_index < 40:
+        batter_intent = "Consolidating (Building Innings)"
+        xw -= 2.0
+        
+    if "four" in text or "six" in text:
+        batter_intent = "Attacking (Looking for boundaries)"
+        xw += 4.0
+        
+    if "RAG" in pred_type:
+        xw += 12.0 # Huge xW boost if targeting known weakness
+        
+    if delivery.dew_pct > 60 and is_spin:
+        xw -= 5.0 # Spin is ineffective with high dew
+        
+    xw = max(0.5, min(xw, 99.9))
+        
     return {
         "status": "success",
         "predicted_type": pred_type,
@@ -455,6 +514,10 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
         "field_pred": field_pred,
         "rec_angle": rec_angle,
         "rec_pace": rec_pace,
+        "rec_x": rec_x,
+        "rec_y": rec_y,
+        "batter_intent": batter_intent,
+        "xw": round(xw, 1),
         "bowler_analytics": analytics,
         "evaluation": eval_text,
         "expected_field": field_pred,

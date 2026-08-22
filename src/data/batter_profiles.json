@@ -1,0 +1,52 @@
+{
+    "Virat Kohli": {
+        "weakness": "Vulnerable to the 5th stump line on a good length early in the innings. Can be drawn into a false drive.",
+        "tactical_override": {
+            "title": "5th Stump Corridor (Anti-Kohli)",
+            "x": 0.25,
+            "y": 12.0,
+            "angle": "Over the wicket",
+            "pace": "Swing Pace (132km/h)"
+        }
+    },
+    "Andre Russell": {
+        "weakness": "Struggles to get under the wide yorker outside off, especially if it is bowled at express pace.",
+        "tactical_override": {
+            "title": "Extreme Wide Yorker",
+            "x": 0.55,
+            "y": 19.5,
+            "angle": "Around the wicket",
+            "pace": "Express Pace (145+km/h)"
+        }
+    },
+    "Rohit Sharma": {
+        "weakness": "Historically struggles against left-arm inswing hitting the front pad early on.",
+        "tactical_override": {
+            "title": "Inswinging Yorker / Full Length",
+            "x": -0.1,
+            "y": 17.5,
+            "angle": "Over the wicket",
+            "pace": "Full and Swinging (135km/h)"
+        }
+    },
+    "Glenn Maxwell": {
+        "weakness": "High risk of attempting the reverse sweep. Fire it flat and wide outside off stump to force a mistake.",
+        "tactical_override": {
+            "title": "Flat and Wide (Anti-Reverse Sweep)",
+            "x": 0.45,
+            "y": 14.5,
+            "angle": "Around the wicket",
+            "pace": "Flat and Fast (95km/h)"
+        }
+    },
+    "AB de Villiers": {
+        "weakness": "Very few weaknesses, but can occasionally be cramped for room by a searing bouncer targeting the left shoulder.",
+        "tactical_override": {
+            "title": "Hostile Short Ball (Bodyline)",
+            "x": -0.15,
+            "y": 8.5,
+            "angle": "Around the wicket",
+            "pace": "Effort Bouncer (145km/h)"
+        }
+    }
+}
