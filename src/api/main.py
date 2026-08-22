@@ -50,6 +50,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Global variables for models and data
 models = {}
 df_main = None
+batter_profiles = {}
 
 @app.on_event("startup")
 def load_assets():
