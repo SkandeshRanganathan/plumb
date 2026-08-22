@@ -116,3 +116,32 @@ py -m streamlit run src/dashboard/dashboard.py
 - **Rolling features use .shift(1)**: No current-delivery information in rolling stats
 - **NULL/NaN explicit**: Missing fields are never fabricated
 - **Physics residuals**: Actual − physics prediction is the core anomaly signal
+
+## 🚀 The Live AI Engine & Chrome Extension
+This project is not just a research repository—it features a live, production-ready AI Engine that runs alongside a Google Chrome Extension, allowing you to get real-time tactical predictions overlaid directly on live matches on Cricbuzz!
+
+### 1. The Production API Backend (`src/api/`)
+The brain of the system is a highly scalable FastAPI microservice.
+- **Contextual Memory**: Powered by a PostgreSQL database (`src/api/database.py`), the AI remembers every ball a bowler has bowled in their current spell (Over History), allowing it to detect patterns and adapt its predictions.
+- **Tactical Recommender**: The AI dictates the optimal **Bowling Angle**, **Pace**, and **Field Settings** based on live match variables.
+- **Enterprise Security**: The API is protected by Redis-backed rate limiting (`fastapi-limiter`) to ensure high availability and prevent spam.
+
+### 2. The Chrome Extension (`src/extension/`)
+A live tactical overlay that injects itself directly into the Cricbuzz commentary feed.
+- **Installation**: Go to `chrome://extensions/` in Google Chrome, enable "Developer mode", click "Load unpacked", and select the `src/extension/` folder.
+- **How it Works**: The extension scrapes live match data (bowler, batter, score, dew factor, last ball commentary) from the DOM, fires it to the FastAPI backend, and renders a sleek, animated "⚡ AI EXECUTION PLAN" card right in the browser.
+- **Features**: Visualizes optimal pitch heatmaps, required run-rate pressure indexes, and AI-driven bowling angles!
+
+### 3. Deployment & Load Balancing (Docker)
+The backend is completely containerized and ready for massive scale.
+To launch the entire enterprise architecture on any server:
+```bash
+# 1. Rename .env.example to .env and insert your secure database password
+# 2. Boot the cluster!
+docker-compose up -d --build
+```
+This single command spins up:
+1. An **Nginx** Reverse Proxy / Load Balancer.
+2. A **PostgreSQL** Database for shared cross-worker memory.
+3. A **Redis** cluster for rate limiting.
+4. Multiple **FastAPI (Uvicorn/Gunicorn)** microservice workers serving predictions concurrently!
