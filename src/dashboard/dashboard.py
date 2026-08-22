@@ -720,18 +720,33 @@ if page == "Live Delivery Analysis":
             if format_val == "T20":
                 if pressure_val > 70:
                     if not is_spin:
+                        is_medium = "MEDIUM" in bowling_style and "FAST" not in bowling_style
                         if dew_pct > 60:
-                            rec_title, rec_x, rec_y = "Hard Length / Into the Pitch", 0.0, 10.0
-                            rec_desc = f"High dew ({dew_pct}%) makes yorkers extremely risky. Hit the deck hard (back-of-a-length) to avoid slipping a full toss."
-                            rec_angle = "Over the wicket"
-                            rec_pace = "Hit the Deck Hard (138km/h)"
-                            rec_field = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
+                            if is_medium:
+                                rec_title, rec_x, rec_y = "Slower Bouncer / Into Pitch", 0.0, 11.0
+                                rec_desc = f"High dew ({dew_pct}%) makes yorkers risky. As a medium pacer, roll your fingers over the ball and dig it short."
+                                rec_angle = "Over the wicket"
+                                rec_pace = "Off-Cutter (112km/h)"
+                                rec_field = "Deep Square Leg and Deep Mid Wicket back. Mid-off up."
+                            else:
+                                rec_title, rec_x, rec_y = "Hard Length / Into the Pitch", 0.0, 10.0
+                                rec_desc = f"High dew ({dew_pct}%) makes yorkers extremely risky. Hit the deck hard (back-of-a-length) to avoid slipping a full toss."
+                                rec_angle = "Over the wicket"
+                                rec_pace = "Hit the Deck Hard (138km/h)"
+                                rec_field = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
                         else:
-                            rec_title, rec_x, rec_y = "Wide Yorker", 0.45 * off_mult, 19.0
-                            rec_desc = "High pressure death over. Target the wide yorker to evade the swinging arc."
-                            rec_angle = "Around the wicket"
-                            rec_pace = "Fast and Full (140+km/h)"
-                            rec_field = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
+                            if is_medium:
+                                rec_title, rec_x, rec_y = "Wide Slower Ball", 0.55 * off_mult, 16.0
+                                rec_desc = "High pressure death over. Medium pacers should use the wide slower ball out of the swinging arc."
+                                rec_angle = "Around the wicket"
+                                rec_pace = "Back-of-hand Slower Ball (115km/h)"
+                                rec_field = "Deep Point and Sweeper Cover on the boundary. Fine Leg inside."
+                            else:
+                                rec_title, rec_x, rec_y = "Wide Yorker", 0.45 * off_mult, 19.0
+                                rec_desc = "High pressure death over. Target the wide yorker to evade the swinging arc."
+                                rec_angle = "Around the wicket"
+                                rec_pace = "Fast and Full (140+km/h)"
+                                rec_field = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
                     else:
                         rec_title, rec_x, rec_y = "Flatter, Outside Off", 0.35 * off_mult, 14.0
                         rec_desc = "High pressure T20. Fire it in flat outside off stump to avoid being swept."

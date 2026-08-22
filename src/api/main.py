@@ -287,22 +287,41 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     if delivery.format == "T20":
         if delivery.pressure_index > 70:
             if not is_spin:
+                is_medium = "MEDIUM" in delivery.scraped_style and "FAST" not in delivery.scraped_style
                 if delivery.dew_pct > 60:
-                    pred_type = "Hard Length / Into the Pitch"
-                    conf = "90%"
-                    exp = f"High dew ({delivery.dew_pct}%) makes yorkers extremely risky. AI recommends hitting the deck hard to avoid slipping a full toss."
-                    next_anim.update({"pitch_x": 50, "pitch_y": 40, "end_x": 50, "end_y": 70})
-                    rec_angle = "Over the wicket"
-                    rec_pace = "Hit the Deck Hard (138km/h)"
-                    field_pred = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
+                    if is_medium:
+                        pred_type = "Slower Bouncer / Into Pitch"
+                        conf = "85%"
+                        exp = f"High dew ({delivery.dew_pct}%) makes yorkers risky. As a medium pacer, AI recommends rolling the fingers over the ball and digging it short."
+                        next_anim.update({"pitch_x": 50, "pitch_y": 44, "end_x": 50, "end_y": 70})
+                        rec_angle = "Over the wicket"
+                        rec_pace = "Off-Cutter (112km/h)"
+                        field_pred = "Deep Square Leg and Deep Mid Wicket back. Mid-off up."
+                    else:
+                        pred_type = "Hard Length / Into the Pitch"
+                        conf = "90%"
+                        exp = f"High dew ({delivery.dew_pct}%) makes yorkers extremely risky. AI recommends hitting the deck hard to avoid slipping a full toss."
+                        next_anim.update({"pitch_x": 50, "pitch_y": 40, "end_x": 50, "end_y": 70})
+                        rec_angle = "Over the wicket"
+                        rec_pace = "Hit the Deck Hard (138km/h)"
+                        field_pred = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
                 else:
-                    pred_type = "Wide Yorker"
-                    conf = "88%"
-                    exp = "High pressure death over. The optimal tactical play is a wide yorker to evade the swinging arc."
-                    next_anim.update({"pitch_x": 25, "pitch_y": 90, "end_x": 20, "end_y": 95})
-                    rec_angle = "Around the wicket" # Extreme angle
-                    rec_pace = "Fast and Full (140+km/h)"
-                    field_pred = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
+                    if is_medium:
+                        pred_type = "Wide Slower Ball"
+                        conf = "87%"
+                        exp = "High pressure death over. Medium pacers should use the wide slower ball out of the swinging arc."
+                        next_anim.update({"pitch_x": 30, "pitch_y": 75, "end_x": 20, "end_y": 90})
+                        rec_angle = "Around the wicket"
+                        rec_pace = "Back-of-hand Slower Ball (115km/h)"
+                        field_pred = "Deep Point and Sweeper Cover on the boundary. Fine Leg inside."
+                    else:
+                        pred_type = "Wide Yorker"
+                        conf = "88%"
+                        exp = "High pressure death over. The optimal tactical play is a wide yorker to evade the swinging arc."
+                        next_anim.update({"pitch_x": 25, "pitch_y": 90, "end_x": 20, "end_y": 95})
+                        rec_angle = "Around the wicket" # Extreme angle
+                        rec_pace = "Fast and Full (140+km/h)"
+                        field_pred = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
             else:
                 pred_type = "Flatter, Outside Off"
                 conf = "80%"
