@@ -646,7 +646,7 @@ def log_feedback(fb: Feedback):
     return {"status": "logged", "message": "Feedback received for model retraining!"}
 
 @app.post("/ask")
-def ask_question(req: QueryRequest):
+def ask_question(req: Message):
     # LLM Chatbot temporarily disabled for speed.
     ans = "The Generative LLM chatbot has been disabled to ensure the Live Prediction API runs with zero latency."
     return {"answer": ans}
