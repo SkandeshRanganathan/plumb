@@ -458,12 +458,76 @@ function injectSidebar() {
         document.getElementById('btn-sync').innerText = "SYNCING...";
         
         try {
-            const res = await fetch('http://localhost:8000/sync_live_match', {
+            // 1. Fetch from ESPN directly (bypassing Akamai since we are a real browser extension)
+            const espnUrl = `https://www.espncricinfo.com/series/${seriesId}/game/${matchId}`;
+            const espnRes = await fetch(espnUrl);
+            const htmlText = await espnRes.text();
+            
+            // 2. Extract __NEXT_DATA__ JSON
+            const matchDataRegex = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/;
+            const matchDataMatch = htmlText.match(matchDataRegex);
+            
+            if (!matchDataMatch) {
+                throw new Error("Could not find __NEXT_DATA__ in ESPN page. Are you blocked?");
+            }
+            
+            const nextData = JSON.parse(matchDataMatch[1]);
+            
+            // 3. Navigate JSON to find match context
+            let appData = nextData.props.appPageProps.data;
+            if (appData.data) appData = appData.data; // Handle fixture vs live difference
+            
+            const match = appData.match;
+            const content = appData.content || {};
+            const innings = content.innings || [];
+            
+            if (innings.length === 0) {
+                throw new Error("Match has not started or no innings data available.");
+            }
+            
+            const currentInnings = innings[innings.length - 1];
+            const batters = currentInnings.inningBatsmen || [];
+            const bowlers = currentInnings.inningBowlers || [];
+            
+            let strikerName = "Unknown Batter";
+            for (let b of batters) {
+                if (!b.battedType) { // Active/Not Out
+                    strikerName = b.player.longName;
+                    break;
+                }
+            }
+            
+            let bowlerName = "Unknown Bowler";
+            if (bowlers.length > 0) {
+                bowlerName = bowlers[bowlers.length - 1].player.longName;
+            }
+            
+            const scoreStr = `${currentInnings.runs || 0}/${currentInnings.wickets || 0}`;
+            const oversStr = `${currentInnings.overs || 0}`;
+            const statusText = match.statusText || match.title;
+            
+            // 4. Send this extracted context to our local AI backend
+            const aiPayload = {
+                bowler: bowlerName,
+                batter: strikerName,
+                last_commentary: `${statusText} | Current Score: ${scoreStr}`,
+                last_over_string: oversStr,
+                pressure_index: 65
+            };
+            
+            const res = await fetch('http://localhost:8000/predict_next_ball', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ match_id: matchId, series_id: seriesId })
+                body: JSON.stringify(aiPayload)
             });
-            const data = await res.json();
+            const predData = await res.json();
+            
+            // Create a fake wrapper so the rest of the UI code still works
+            const data = {
+                status: 'success',
+                context: { bowler: bowlerName, batter: strikerName, score: scoreStr, overs: oversStr },
+                prediction: { status: 'success', data: predData }
+            };
             
             if (data.status === 'success') {
                 document.getElementById('btn-sync').innerText = "🔗 ESPN SYNC";
