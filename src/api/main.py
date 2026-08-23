@@ -671,7 +671,11 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
         analytics += f"⚡ Avg Pace: {b_data.get('bp_avg_speed', 135):.1f} kph\n"
         analytics += f"🎯 Primary Weapon: Hard Lengths & Cutters"
     else:
-        analytics += f"⚡ Est. Pace: ~135 kph\n🎯 Primary Weapon: Seam variations"
+        if is_spin:
+            display_style = bowling_style_str.title() if bowling_style_str != "unknown" else delivery.scraped_style
+            analytics += f"⚡ Est. Pace: ~85 kph\n🎯 Primary Weapon: Flight and Drift ({display_style})"
+        else:
+            analytics += f"⚡ Est. Pace: ~135 kph\n🎯 Primary Weapon: Seam variations"
         
     # Batter Intent & xW
     batter_intent = "Defensive (Rotating Strike)"
