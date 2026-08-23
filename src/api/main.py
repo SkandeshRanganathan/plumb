@@ -210,6 +210,33 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             eval_text = f"🎯 Spot On: Predicted '{prev_pred}'. Bowler actually executed a {actual_delivery}. Trajectory coordinates logged to reinforce weights!"
         else:
             eval_text = f"🔄 Deviation Logged: Predicted '{prev_pred}' but actual delivery was {actual_delivery}. The Markov Matrix has logged the exact pitch coordinates to self-correct next ball."
+            
+        # --- ONLINE LEARNING: Dynamically train the ML dataset ---
+        try:
+            import csv, os
+            csv_path = os.path.join(os.path.dirname(__file__), 'historical_training_data.csv')
+            with open(csv_path, 'a', encoding='utf-8', newline='') as f:
+                writer = csv.writer(f)
+                
+                # Heuristics for the new row
+                ball_out = 1 if re.search(r'\b(out|caught|bowled|lbw)\b', text) else 0
+                is_spin = not ("FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style)
+                pace = 88 if is_spin else 136
+                
+                # Guess venue from commentary or default
+                venue = "Unknown Venue"
+                if "colombo" in text.lower() or "sinhalese" in text.lower(): venue = "Sinhalese Sports Club"
+                
+                # Append live ball to the dataset!
+                writer.writerow([
+                    bowler, delivery.scraped_style, delivery.batter, 
+                    "Right" if delivery.right_bat else "Left",
+                    venue, 0.4, "Middle", ball_out, pace, 
+                    "Over the wicket", 0.05, actual_type
+                ])
+        except Exception as e:
+            print("Online Learning Error:", e)
+        # ---------------------------------------------------------
         
     # Unique AI Commentary Generator
     unique_comment = ""
