@@ -128,6 +128,22 @@ def build_bowler_profiles(train_df: pd.DataFrame) -> pd.DataFrame:
     profiles = base.copy()
     for extra in [speed_stats, traj_stats, dtype_pivot, speed_by_phase]:
         profiles = profiles.merge(extra, on="bowler_id", how="left")
+        
+    # ── Kaggle Dataset Override ───────────────────────────────────────────────
+    try:
+        import sys
+        sys.path.append(str(ROOT))
+        from src.api.player_database import get_player_profile
+        print("  Applying precise Kaggle bowler styles to historical offline profiles...")
+        profiles['precise_style'] = profiles['bowler_name'].apply(
+            lambda name: get_player_profile(name).get('bowlingstyle', 'unknown')
+        )
+        profiles['bowling_style'] = profiles.apply(
+            lambda row: row['precise_style'] if row['precise_style'] != "unknown" else row['bowling_style'], axis=1
+        )
+        profiles = profiles.drop(columns=['precise_style'])
+    except Exception as e:
+        print(f"  Warning: Could not fetch Kaggle profiles. Proceeding with derived stats. Error: {e}")
 
     # ── Fill missing numeric stats with global style medians ─────────────────
     numeric_cols = profiles.select_dtypes(include=np.number).columns

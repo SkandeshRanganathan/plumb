@@ -175,6 +175,24 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     bowler = delivery.bowler
     current_over = delivery.last_over_string
     
+    # 0. Kaggle Player Database Integration
+    from src.api.player_database import get_player_profile
+    bowler_profile = get_player_profile(bowler)
+    batter_profile = get_player_profile(delivery.batter)
+    
+    bowling_style_str = bowler_profile.get("bowlingstyle", "").lower()
+    batting_style_str = batter_profile.get("battingstyle", "").lower()
+    
+    # Precise Boolean Flags
+    is_spin = "spin" in bowling_style_str or "orthodox" in bowling_style_str or "break" in bowling_style_str or "googly" in bowling_style_str
+    is_left_arm = "left-arm" in bowling_style_str
+    is_medium = "medium" in bowling_style_str
+    
+    # Fallback to scraped if unknown
+    if not is_spin and bowling_style_str == "unknown":
+        is_spin = not ("FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style)
+        is_medium = "MEDIUM" in delivery.scraped_style
+    
     # 1. Post-Ball Evaluation & Feedback Loop
     prev_pred = None
     b_state = db.query(BowlerState).filter(BowlerState.bowler_name == bowler).first()
@@ -220,7 +238,6 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                 
                 # Heuristics for the new row
                 ball_out = 1 if re.search(r'\b(out|caught|bowled|lbw)\b', text) else 0
-                is_spin = not ("FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style)
                 pace = 88 if is_spin else 136
                 
                 # Guess venue from commentary or default
@@ -229,7 +246,8 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                 
                 # Append live ball to the dataset!
                 writer.writerow([
-                    bowler, delivery.scraped_style, delivery.batter, 
+                    bowler, bowling_style_str.title() if bowling_style_str != "unknown" else delivery.scraped_style, 
+                    delivery.batter, 
                     "Right" if delivery.right_bat else "Left",
                     venue, 0.4, "Middle", ball_out, pace, 
                     "Over the wicket", 0.05, actual_type
@@ -369,11 +387,21 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     # Over Phase Context overrides (Tactical Hard Lengths vs Yorkers)
     off_mult = 1 if delivery.right_bat else -1 # +X is off-side for RHB in this system
     
-    # Ultimate Tactical Engine Initialization
-    is_spin = not ("FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style)
+    # Ultimate Tactical Engine Initialization (Using precise Kaggle profiles)
+    rec_angle = "Over the wicket" if not is_left_arm else "Around the wicket"
     
-    rec_angle = "Over the wicket"
-    rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Effort (135km/h)"
+    if is_spin:
+        if "orthodox" in bowling_style_str:
+            rec_pace = "Left-Arm Orthodox Stock (85km/h)"
+        elif "legbreak" in bowling_style_str:
+            rec_pace = "Wrist Spin Googly (82km/h)"
+        elif "offbreak" in bowling_style_str:
+            rec_pace = "Offbreak Stock (88km/h)"
+        else:
+            rec_pace = "Stock Spin (85km/h)"
+    else:
+        rec_pace = "Standard Effort (135km/h)"
+        
     field_pred = "Standard field setting"
     rec_x = 50.0
     rec_y = 65.0
@@ -381,7 +409,7 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     if delivery.format == "T20":
         if delivery.pressure_index > 70:
             if not is_spin:
-                is_medium = "MEDIUM" in delivery.scraped_style and "FAST" not in delivery.scraped_style
+                # Fast Bowler Death over logic
                 if delivery.dew_pct > 60:
                     if is_medium:
                         pred_type = "Slower Bouncer / Into Pitch"
@@ -417,12 +445,24 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                         rec_pace = "Fast and Full (140+km/h)"
                         field_pred = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
             else:
-                pred_type = "Flatter, Outside Off"
-                conf = "80%"
-                exp = "High pressure T20. Spinners should fire it in flat outside off stump to avoid being swept."
-                rec_x, rec_y = 30, 60
-                rec_angle = "Around the wicket"
-                rec_pace = "Flat and Fast (95km/h)"
+                # Spinner Death Over logic
+                if "orthodox" in bowling_style_str:
+                    pred_type = "Arm Ball, Fired In"
+                    exp = "High pressure T20. Left-arm spinner should fire the arm ball flat and fast into the pads."
+                    rec_x, rec_y = 50, 70
+                    rec_pace = "Flat Arm Ball (95km/h)"
+                elif "legbreak" in bowling_style_str:
+                    pred_type = "Wrong 'Un (Googly) Outside Off"
+                    exp = "High pressure T20. Leg-spinner should bowl the googly wide to deceive the swing."
+                    rec_x, rec_y = 30, 60
+                    rec_pace = "Fast Googly (88km/h)"
+                else:
+                    pred_type = "Flatter, Outside Off (Doosra)"
+                    exp = "High pressure T20. Spinners should fire it in flat outside off stump to avoid being swept."
+                    rec_x, rec_y = 30, 60
+                    rec_pace = "Flat and Fast (95km/h)"
+                
+                conf = "82%"
                 field_pred = "Long Off and Deep Point boundary riders. Catching cover in place."
         else:
             if not ("four" in text or "six" in text):
@@ -440,23 +480,50 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
             exp = "Early innings in longer format. Bowl in the channel of uncertainty. Invite the drive."
             rec_x, rec_y = 35, 65
             rec_angle = "Over the wicket"
-            rec_pace = "Flighted Delivery (78km/h)" if is_spin else "Swing Pace (132km/h)"
+            
+            if is_spin:
+                if "orthodox" in bowling_style_str:
+                    rec_pace = "Flighted Loop (78km/h)"
+                    pred_type = "Flighted, Drawing Forward"
+                elif "legbreak" in bowling_style_str:
+                    rec_pace = "Flighted Legbreak (75km/h)"
+                    pred_type = "Looped outside leg"
+                else:
+                    rec_pace = "Standard Flight (78km/h)"
+                    pred_type = "Flighted Drift"
+            else:
+                rec_pace = "Swing Pace (132km/h)"
+                
             field_pred = "3 Slips and a Gully. Attacking field to find the edge."
         elif delivery.wickets >= 7:
-            pred_type = "Toe-Crushing Yorker"
-            conf = "92%"
-            exp = "Tailenders at the crease. Attack the stumps with pace and full length."
-            rec_x, rec_y = 50, 90
-            rec_angle = "Around the wicket"
-            rec_pace = "Flat and Fast (95km/h)" if is_spin else "Effort Ball (145km/h)"
-            field_pred = "Short Leg and Leg Slip in place to intimidate, but bowling full."
+            if is_spin:
+                pred_type = "Quick Slider / Flipper"
+                conf = "88%"
+                exp = "Tailenders struggle against fast, flat spin. Attack the pads."
+                rec_x, rec_y = 50, 75
+                rec_angle = "Around the wicket" if not is_left_arm else "Over the wicket"
+                rec_pace = "Fast Slider (95km/h)"
+                field_pred = "Short Leg, Silly Point, and Leg Slip. Extreme pressure."
+            else:
+                pred_type = "Toe-Crushing Yorker"
+                conf = "92%"
+                exp = "Tailenders at the crease. Attack the stumps with pace and full length."
+                rec_x, rec_y = 50, 90
+                rec_angle = "Around the wicket"
+                rec_pace = "Effort Ball (145km/h)"
+                field_pred = "Short Leg and Leg Slip in place to intimidate, but bowling full."
         else:
             pred_type = "Good Length, Tight Line"
             conf = "78%"
             exp = "Middle phase. Dry up the runs by bowling stump-to-stump."
             rec_x, rec_y = 50, 65
-            rec_angle = "Over the wicket"
-            rec_pace = "Stock Spin (85km/h)" if is_spin else "Stock Delivery (135km/h)"
+            rec_angle = "Over the wicket" if not is_left_arm else "Around the wicket"
+            
+            if is_spin:
+                rec_pace = "Stock Spin (85km/h)"
+            else:
+                rec_pace = "Stock Delivery (135km/h)"
+                
             field_pred = "Standard field setting"
             
     # --- XGBoost Machine Learning Dataset Integration ---
