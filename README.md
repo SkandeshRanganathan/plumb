@@ -1,39 +1,98 @@
 # Context-Aware Adaptive Cricket Ball Intelligence System (Dual Architecture)
 
-This project has evolved into a massive **Dual-Architecture Framework**. It contains two distinct, but incredibly powerful, halves:
+A dual-architecture AIML framework for context-aware cricket analysis, trajectory intelligence, anomaly detection, computer vision, and real-time tactical prediction.
 
-1. **The Core Research Framework (The Main Project)**: A heavy, offline Machine Learning pipeline designed to parse millions of data points (HawkeyeStats, CricSheet, Weather APIs) to run physics simulations, anomaly detection, and ablation studies.
-2. **The Live Broadcast Companion (The Chrome Extension)**: A real-time predictive engine that sits as an overlay on your browser during live matches. It uses Computer Vision and our custom ST-MPDA algorithm to predict the *very next ball* as you watch.
+This system combines large-scale historical ball-tracking data with match context, weather, pitch characteristics, ball state, bowler profiles, physics-based modelling, machine learning, and computer vision.
+
+The project is structured into two complementary architectures:
+1. **Core Research Framework**: An offline research and modelling pipeline for large-scale trajectory analysis, physics simulation, anomaly detection, and explainability.
+2. **Live Broadcast Companion**: A real-time AI system operating alongside live cricket broadcasts via a Chrome extension and FastAPI backend, analysing match context and predicting the very next delivery.
 
 ---
 
-## 🏗️ Architecture 1: The Core Research Framework (Main Project)
-This is the foundational brain of the project. It focuses on large-scale trajectory analysis and answering the question: *What should this delivery have looked like under current conditions, and what actually happened?*
+## 1. The Research Objective
 
-- **Data Ingestion Pipeline**: Scrapes and merges Hawkeye stats, CricSheet match JSONs, and Open-Meteo weather data into a massive `master_dataset.parquet`.
-- **Feature Engineering**: Tracks evolving ball-state (scuffing over time) and bowler career profiles.
-- **Physics Models**: Uses XGBoost to simulate exact ball trajectories.
-- **Anomaly Detection**: Flags unusual deliveries by computing the difference between expected and observed physics behavior.
-- **Evaluation & SHAP**: Runs ablation studies and SHAP explainability plots for research analysis.
+The central question driving this project is:
+> **Can cricket-ball behaviour be predicted more accurately by combining observed trajectory data with individualized bowler characteristics, release geometry, ball state, pitch conditions, venue, weather, and historical delivery context?**
 
-**To run the Main Project:**
-```bash
-python run_pipeline.py                    # Full pipeline (CricSheet + Weather)
-python run_pipeline.py --models-only      # Skip data prep, run models only
-python run_pipeline.py --dashboard        # Launch the Streamlit dashboard
+Unlike conventional tracking systems that reconstruct *what happened*, this intelligence layer attempts to determine:
+> **What *should* this delivery have looked like under current conditions, and how did the actual delivery differ from that expectation?**
+
+The difference between expected and observed behaviour (the residual) is the foundation for our anomaly detection, contextual modelling, and real-time tactical prediction.
+
+---
+
+## 2. Dual Architecture Overview
+
+```text
+                         CRICKET DATA
+                              |
+                +-------------+-------------+
+                |                           |
+                v                           v
+       CORE RESEARCH FRAMEWORK      LIVE BROADCAST COMPANION
+                |                           |
+                v                           v
+       Historical Analysis           Live Match Context
+                |                           |
+                v                           v
+       Physics + ML Models             FastAPI Engine
+                |                           |
+                v                           v
+       Research Evaluation          Chrome Extension
 ```
 
+- **Core Research Framework**: Designed for large-scale historical analysis, trajectory modelling, physics simulations, contextual feature engineering, ablation experiments, and SHAP explainability.
+- **Live Broadcast Companion**: Designed for real-time match analysis, next-ball prediction, online learning, pitch and match-state analysis, and browser-based visualisation.
+
 ---
 
-## 🚀 Architecture 2: The Live Broadcast Companion (v2.0)
-We built a real-time front-end on top of the backend intelligence to serve predictions instantly while you watch live matches (e.g., on Cricbuzz).
+## 3. Architecture 1: Core Research Framework
 
-- **Chrome Extension Overlay**: Injects a sleek UI directly into the live scorecard (`content.js`, `sidebar.css`).
-- **FastAPI Backend (`main.py`)**: A real-time API server that handles extension requests.
-- **Computer Vision & ST-MPDA (`vision.py`, `pitch_analyzer.py`)**: Dynamically analyzes live broadcast frames to estimate pitch wear, Par Scores, and Toss Game Theory matrices using the Spatio-Temporal Markovian Pitch Degradation Algorithm.
-- **Live Online Learning**: The AI actively "watches" the game. Every time a ball is bowled, it compares its prediction against the live commentary and automatically appends the outcome to `historical_training_data.csv`, meaning the model trains itself in real-time.
+Processes over 1.1 million historical delivery records (HawkeyeStats, CricSheet, Open-Meteo) to investigate how contextual variables affect cricket-ball behaviour.
 
-**To run the Live Companion:**
-1. **Start the AI Backend**: `python -m src.api.main`
-2. **Install Extension**: Load the `src/extension/` folder in `chrome://extensions/`.
-3. Open Cricbuzz, hit **ENABLE VISION**, and watch the AI predict the next ball!
+### Key Components:
+- **Data Ingestion Pipeline** (`src/ingestion/`): Merges Hawkeye tracking data, CricSheet match JSONs, and Open-Meteo weather data into a unified `master_dataset.parquet`.
+- **Feature Engineering** (`src/features/`): Transforms raw data into context-aware features. Includes individualized bowler profiles, release geometry (x/y/z, velocity, arm slot), and evolving ball-state (accounting for ball age and wear over an innings).
+- **Physics Modelling** (`src/models/physics/`): Simulates trajectories using physical factors (gravity, drag, Magnus effect) to provide a baseline expected trajectory.
+- **Context-Aware Machine Learning** (`src/models/context_aware/`): Uses XGBoost to learn relationships between context (pitch, weather, bowler profile) and trajectory deviations. The final model is a composite: `Physics Prediction + ML Residual Correction`.
+- **Anomaly Detection** (`src/models/anomaly/`): Flags deliveries whose observed behaviour differs substantially from the expected physics/ML baseline (e.g., unexpected swing, slower balls).
+- **Explainability & Evaluation** (`src/evaluation/`, `src/explainability/`): Uses SHAP values and rigorous Ablation Studies to explain *why* the AI made a prediction and to mathematically prove the value of each feature.
+
+---
+
+## 4. Architecture 2: Live Broadcast Companion
+
+A real-time interface for consuming the project's AI predictions during a live cricket match. It acts as a predictive overlay while you watch a match on platforms like Cricbuzz.
+
+### Key Components:
+- **Chrome Extension** (`src/extension/`): Monitors the live scorecard, extracts new commentary via DOM polling, and beautifully renders prediction cards, pitch heatmaps, and field radar overlays directly in your browser.
+- **FastAPI Backend** (`src/api/main.py`): The real-time prediction service. It evaluates previous deliveries, manages short-term memory (database), retrieves historical context, and predicts the next ball.
+- **Computer Vision & ST-MPDA** (`src/api/vision.py`, `pitch_analyzer.py`): Analyzes broadcast frames to estimate pitch conditions (grass, dust, dampness). Uses our custom **Spatio-Temporal Markovian Pitch Degradation Algorithm (ST-MPDA)** to dynamically model how the pitch wears over time, predicting Par Scores and Game Theory matrices.
+- **Online Learning Engine**: The AI actively learns as you watch. After every ball, the backend compares its prediction against the actual outcome, extracts the delivery type, and automatically appends it to `historical_training_data.csv`, meaning the model trains itself in real-time.
+
+---
+
+## 5. How to Run
+
+### Run the Core Research Framework (Offline)
+```bash
+python run_pipeline.py                    # Full data pipeline (Ingest, Models, Eval)
+python run_pipeline.py --offline          # Skip external API requests
+python run_pipeline.py --models-only      # Skip data prep, run models only
+python run_pipeline.py --dashboard        # Launch Streamlit SHAP dashboard
+```
+
+### Run the Live Broadcast Companion (Real-time)
+1. **Start the AI Backend**:
+   ```bash
+   python -m src.api.main
+   ```
+2. **Install the Extension**:
+   - Go to `chrome://extensions/` in your browser.
+   - Enable "Developer mode" & click "Load unpacked".
+   - Select the `src/extension/` folder.
+3. **Analyze Live**:
+   - Open a live cricket match on Cricbuzz.
+   - Click the **ENABLE VISION** button on the overlay.
+   - The AI will evaluate pitch conditions, calculate Par Scores, and predict the exact pace, angle, and delivery type of the *next ball*!
