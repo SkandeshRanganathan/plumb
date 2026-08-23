@@ -189,7 +189,13 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     is_medium = "medium" in bowling_style_str
     
     # Fallback to scraped if unknown
-    if not is_spin and bowling_style_str == "unknown":
+    if delivery.scraped_style == "SPIN_OVERRIDE":
+        is_spin = True
+        is_medium = False
+    elif delivery.scraped_style == "PACE_OVERRIDE":
+        is_spin = False
+        is_medium = False
+    elif not is_spin and bowling_style_str == "unknown":
         is_spin = not ("FAST" in delivery.scraped_style or "MEDIUM" in delivery.scraped_style)
         is_medium = "MEDIUM" in delivery.scraped_style
     

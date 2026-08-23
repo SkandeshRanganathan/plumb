@@ -9,10 +9,10 @@ async function extractDeepMatchContext() {
         right_bat: true,
         last_over_string: "",
         last_commentary: "",
-        dew_pct: typeof currentDewPct !== 'undefined' ? currentDewPct : 30,
+        dew_pct: typeof window.currentDewPct !== 'undefined' ? window.currentDewPct : 30,
         wickets: 3,
         req_rate: 8.5,
-        bowling_angle: typeof currentBowlingAngle !== 'undefined' ? currentBowlingAngle : "Over the wicket",
+        bowling_angle: typeof window.currentBowlingAngle !== 'undefined' ? window.currentBowlingAngle : "Over the wicket",
         scraped_style: "FAST_SEAM"
     };
 
@@ -86,7 +86,10 @@ async function extractDeepMatchContext() {
         } // Closing if (url.includes("cricbuzz.com"))
         
         // --- 5. Stealth Profile Scraping ---
-        if (context.bowler !== "Unknown") {
+        if (typeof window.currentBowlingStyleOverride !== 'undefined' && window.currentBowlingStyleOverride !== "Auto-Detect") {
+            context.scraped_style = window.currentBowlingStyleOverride;
+            console.log(`Cricket AI: Style OVERRIDE applied -> ${context.scraped_style}`);
+        } else if (context.bowler !== "Unknown") {
             if (cricProfileCache[context.bowler]) {
                 context.scraped_style = cricProfileCache[context.bowler];
             } else {
@@ -327,6 +330,14 @@ function injectSidebar() {
                             <option value="Around the wicket">Around the wicket</option>
                         </select>
                     </div>
+                    <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:12px; color:#9ca3af;">Bowling Style:</span>
+                        <select id="style-override" style="background:#374151; color:#fff; border:1px solid #4b5563; padding:4px; border-radius:4px; font-size:11px;">
+                            <option value="Auto-Detect">Auto-Detect</option>
+                            <option value="SPIN_OVERRIDE">Spin</option>
+                            <option value="PACE_OVERRIDE">Pace</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="cric-ai-card">
@@ -463,16 +474,21 @@ function injectSidebar() {
     });
     
     // Tactical Overrides listeners
-    let currentDewPct = 30;
-    let currentBowlingAngle = "Over the wicket";
+    window.currentDewPct = 30;
+    window.currentBowlingAngle = "Over the wicket";
+    window.currentBowlingStyleOverride = "Auto-Detect";
     
     document.getElementById('dew-slider').addEventListener('input', (e) => {
-        currentDewPct = parseInt(e.target.value);
-        document.getElementById('dew-val').textContent = currentDewPct + '%';
+        window.currentDewPct = parseInt(e.target.value);
+        document.getElementById('dew-val').textContent = window.currentDewPct + '%';
     });
     
     document.getElementById('angle-select').addEventListener('change', (e) => {
-        currentBowlingAngle = e.target.value;
+        window.currentBowlingAngle = e.target.value;
+    });
+    
+    document.getElementById('style-override').addEventListener('change', (e) => {
+        window.currentBowlingStyleOverride = e.target.value;
     });
 
 
