@@ -113,7 +113,36 @@ class Message(BaseModel):
 class FrameData(BaseModel):
     image: str
 
+class PitchAnalysisRequest(BaseModel):
+    image_base64: str = ""
+    pitch_report: str = ""
+    format: str = "T20"
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@app.post("/analyze_pitch_conditions")
+def analyze_pitch_conditions(req: PitchAnalysisRequest):
+    """Analyzes pitch image and text report to generate a Game Theory Matrix."""
+    from src.api.pitch_analyzer import pitch_engine
+    
+    # If image is provided, we can pass it to vision.py first to extract physical pitch_type
+    detected_pitch_type = "Standard Pitch"
+    
+    if req.image_base64:
+        from src.api.vision import analyze_broadcast_frame
+        try:
+            vis_res = analyze_broadcast_frame(req.image_base64)
+            detected_pitch_type = vis_res.get('pitch_type', 'Standard Pitch')
+        except Exception as e:
+            print(f"Vision error on pitch image: {e}")
+            
+    # Pass both visual heuristic and textual NLP to the Pitch Intelligence Engine
+    result = pitch_engine.analyze(
+        pitch_type=detected_pitch_type,
+        pitch_report_text=req.pitch_report,
+        match_format=req.format
+    )
+    return result
 
 @app.post("/analyze_frame")
 def analyze_frame(frame: FrameData):

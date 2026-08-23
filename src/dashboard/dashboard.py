@@ -405,6 +405,7 @@ with st.sidebar:
     st.markdown("---")
     page = st.selectbox("Navigation", [
         "Live Delivery Analysis",
+        "Pitch Intelligence & Toss Analyzer",
         "Dataset Explorer",
         "Bowler Profiles",
         "Experiment Results",
@@ -1014,6 +1015,101 @@ margin-bottom: 20px;
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PAGE 2: Dataset Explorer
 # ═══════════════════════════════════════════════════════════════════════════════
+
+elif page == "Pitch Intelligence & Toss Analyzer":
+    st.markdown('<p class="section-header">🏟️ AI Pitch Intelligence & Game Theory Matrix</p>', unsafe_allow_html=True)
+    st.markdown("Upload a photo of the pitch or paste the textual pitch report to generate advanced Game-Theory toss metrics and optimal bowling execution plans.")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("### 1. Ingestion")
+        st_format = st.selectbox("Match Format", ["T20", "Test", "ODI"])
+        uploaded_img = st.file_uploader("Upload Pitch Image (Vision OpenCV)", type=["jpg", "png", "jpeg"])
+        pitch_txt = st.text_area("Paste Pitch Report (NLP)", height=150, placeholder="E.g. It's a dry surface with some cracks. Spinners will come into play later...")
+        
+        if st.button("Generate Pitch Intelligence", type="primary"):
+            import requests
+            import base64
+            
+            b64_img = ""
+            if uploaded_img is not None:
+                b64_img = base64.b64encode(uploaded_img.read()).decode("utf-8")
+                
+            payload = {
+                "image_base64": b64_img,
+                "pitch_report": pitch_txt,
+                "format": st_format
+            }
+            
+            with st.spinner("Running Vision & NLP Models..."):
+                try:
+                    res = requests.post("http://localhost:8000/analyze_pitch_conditions", json=payload)
+                    if res.status_code == 200:
+                        st.session_state.pitch_results = res.json()
+                    else:
+                        st.error(f"API Error: {res.text}")
+                except Exception as e:
+                    st.error(f"Connection Error: {e}")
+                    
+    with col2:
+        st.markdown("### 2. Analytics Output")
+        if "pitch_results" in st.session_state:
+            data = st.session_state.pitch_results
+            
+            c_a, c_b = st.columns(2)
+            c_a.metric("Detected Surface", data["detected_nature"])
+            c_b.metric("Par Score (1st Innings)", data["par_score"])
+            
+            st.markdown(f"#### 🎯 Recommended Toss Decision: **{data['toss_decision']}**")
+            
+            st.markdown("##### Game Theory Win Probability Matrix")
+            gt = data["game_theory_matrix"]
+            df_gt = pd.DataFrame([
+                {"Decision": "Bat First", "Win %": gt["bat_first"]["expected_win_prob"], "Advantage": gt["bat_first"]["advantage"]},
+                {"Decision": "Bowl First", "Win %": gt["bowl_first"]["expected_win_prob"], "Advantage": gt["bowl_first"]["advantage"]}
+            ])
+            st.table(df_gt)
+            
+            st.info(f"**Optimal Bowling Blueprint:** {data['optimal_bowling_length']}")
+            
+            st.markdown("##### 5-Day Pitch Wear Forecast (Markov Chain Heatmap)")
+            
+            # Generate a 3D surface plot representing Pitch Wear
+            heatmap_type = data["wear_heatmap"]
+            x = np.linspace(-1.5, 1.5, 30)
+            y = np.linspace(0, 20.12, 50)
+            X, Y = np.meshgrid(x, y)
+            
+            if heatmap_type == "green_seaming":
+                Z = np.sin(Y) * np.cos(X) * 0.1 # even bounce, small divots
+                colorscale = "Greens"
+            elif heatmap_type == "dusty_spinning":
+                Z = np.sin(Y*2) * np.cos(X*2) * 0.8 # heavy cracks
+                colorscale = "YlOrBr"
+            elif heatmap_type == "damp_sticky":
+                Z = np.sin(Y/2) * np.cos(X/2) * 0.5
+                colorscale = "Blues"
+            else:
+                Z = np.zeros_like(X) # flat
+                colorscale = "Greys"
+                
+            fig = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, colorscale=colorscale)])
+            fig.update_layout(
+                title="Forecasted Surface Degradation", 
+                scene=dict(
+                    xaxis_title='Width (m)', 
+                    yaxis_title='Length (m)', 
+                    zaxis_title='Cracks/Wear (Depth)',
+                    zaxis=dict(range=[-1, 1])
+                ),
+                margin=dict(l=0, r=0, b=0, t=30),
+                height=350
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+        else:
+            st.info("Awaiting input...")
 
 elif page == "Dataset Explorer":
     st.markdown("### Dataset Explorer")
