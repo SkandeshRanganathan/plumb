@@ -1089,7 +1089,10 @@ elif page == "Pitch Intelligence & Toss Analyzer":
                 y = np.linspace(0, 20.12, 50)
                 X, Y = np.meshgrid(x, y)
                 
-                fig = go.Figure(data=[go.Surface(z=Z_grid, x=X, y=Y, colorscale=colorscale)])
+                fig = go.Figure(data=[go.Surface(
+                    z=Z_grid, x=X, y=Y, colorscale=colorscale,
+                    colorbar=dict(title="Degradation Intensity")
+                )])
                 fig.update_layout(
                     title=f"Forecasted Surface: {selected_phase}", 
                     scene=dict(
@@ -1102,6 +1105,16 @@ elif page == "Pitch Intelligence & Toss Analyzer":
                     height=400
                 )
                 st.plotly_chart(fig, use_container_width=True)
+                
+                # Dynamic Legend Explanation
+                if colorscale == "Greens":
+                    st.caption("**🟢 Green / Seaming Pitch Map**: Darker green areas indicate deep divots and fresh grass patches. Lighter areas represent scuffed patches where the seam might grip. Watch for uneven bounce in the dark zones.")
+                elif colorscale == "YlOrBr":
+                    st.caption("**🟠 Dusty / Spinning Pitch Map**: Dark orange/brown areas highlight deep cracks opening up. Lighter yellow zones are flat dry dust. Spinners targeting the dark areas will extract massive turn and erratic bounce.")
+                elif colorscale == "Blues":
+                    st.caption("**🔵 Damp / Sticky Pitch Map**: Dark blue represents wet, sticky ridges on the surface. Lighter areas are drying out. The ball will skid or stop unexpectedly when pitching in the dark ridges.")
+                else:
+                    st.caption("**⚪ Flat / Belter Pitch Map**: Dark grey indicates minor scuff marks from bowler footfalls, while light areas are flat and true. This pitch remains mostly even and heavily favors batting throughout.")
             else:
                 st.warning("ST-MPDA temporal matrix missing. Please re-generate.")
             
