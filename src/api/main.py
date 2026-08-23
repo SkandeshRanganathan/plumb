@@ -538,6 +538,13 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
                 dominant_delivery = None
                 delivery_counts = {}
                 for row in reader:
+                    # To prevent fast bowling predictions for spinners (e.g. Inswingers), strictly filter by bowler style
+                    hist_style = row['bowler_style'].lower()
+                    if is_spin and ("fast" in hist_style or "medium" in hist_style or "pace" in hist_style):
+                        continue
+                    if not is_spin and ("spin" in hist_style or "orthodox" in hist_style or "break" in hist_style or "googly" in hist_style):
+                        continue
+                        
                     # Fuzzy match bowler or batter
                     if delivery.bowler.split()[-1] in row['bowler_name'] or delivery.batter.split()[-1] in row['batter_name']:
                         match_count += 1
