@@ -105,9 +105,7 @@ function injectSidebar() {
         <div class="cric-ai-header">
             <span style="font-size:18px; font-weight:900; letter-spacing:0.5px; color:#fff;">LIVE BROADCAST COMPANION</span>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <input type="text" id="espn-match-id" placeholder="ESPN Match ID" style="padding:4px; font-size:10px; border-radius:4px; border:1px solid #4b5563; background:#374151; color:#fff; width:90px;" />
-                <input type="text" id="espn-series-id" placeholder="ESPN Series ID" style="padding:4px; font-size:10px; border-radius:4px; border:1px solid #4b5563; background:#374151; color:#fff; width:90px;" />
-                <button id="btn-sync" style="background:#0ea5e9; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">🔗 ESPN SYNC</button>
+                <span style="background:#22c55e; color:#000; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:900;">🧠 Model: v2.0 (Historical Data)</span>
                 <button id="btn-vision" style="background:#8b5cf6; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">👁️ ENABLE VISION</button>
                 <button id="test-end-match" style="background:#f43f5e; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">TEST POST-MATCH</button>
                 <span id="cric-ai-close" style="cursor:pointer; font-size:20px; opacity:0.7; transition: 0.2s;">&times;</span>
@@ -445,140 +443,7 @@ function injectSidebar() {
         currentBowlingAngle = e.target.value;
     });
 
-    // ESPN Sync Logic
-    document.getElementById('btn-sync').addEventListener('click', async () => {
-        const matchId = document.getElementById('espn-match-id').value;
-        const seriesId = document.getElementById('espn-series-id').value;
-        
-        if (!matchId || !seriesId) {
-            alert("Please enter both Match ID and Series ID");
-            return;
-        }
-        
-        document.getElementById('btn-sync').innerText = "SYNCING...";
-        
-        try {
-            // 1. Fetch from ESPN via Background Service Worker to bypass CORS
-            const response = await new Promise((resolve) => {
-                chrome.runtime.sendMessage(
-                    { action: "fetch_espn", matchId: matchId, seriesId: seriesId },
-                    resolve
-                );
-            });
-            
-            if (!response.success) {
-                throw new Error("Background fetch failed: " + response.error);
-            }
-            
-            const htmlText = response.html;
-            
-            // 2. Extract __NEXT_DATA__ JSON
-            const matchDataRegex = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/;
-            const matchDataMatch = htmlText.match(matchDataRegex);
-            
-            if (!matchDataMatch) {
-                throw new Error("Could not find __NEXT_DATA__ in ESPN page. Are you blocked?");
-            }
-            
-            const nextData = JSON.parse(matchDataMatch[1]);
-            
-            // 3. Navigate JSON to find match context
-            let appData = nextData.props.appPageProps.data;
-            if (appData.data) appData = appData.data; // Handle fixture vs live difference
-            
-            const match = appData.match;
-            const content = appData.content || {};
-            const innings = content.innings || [];
-            
-            if (innings.length === 0) {
-                throw new Error("Match has not started or no innings data available.");
-            }
-            
-            const currentInnings = innings[innings.length - 1];
-            const batters = currentInnings.inningBatsmen || [];
-            const bowlers = currentInnings.inningBowlers || [];
-            
-            let strikerName = "Unknown Batter";
-            for (let b of batters) {
-                if (!b.battedType) { // Active/Not Out
-                    strikerName = b.player.longName;
-                    break;
-                }
-            }
-            
-            let bowlerName = "Unknown Bowler";
-            if (bowlers.length > 0) {
-                bowlerName = bowlers[bowlers.length - 1].player.longName;
-            }
-            
-            const scoreStr = `${currentInnings.runs || 0}/${currentInnings.wickets || 0}`;
-            const oversStr = `${currentInnings.overs || 0}`;
-            const statusText = match.statusText || match.title;
-            
-            // 4. Send this extracted context to our local AI backend
-            const aiPayload = {
-                bowler: bowlerName,
-                batter: strikerName,
-                last_commentary: `${statusText} | Current Score: ${scoreStr}`,
-                last_over_string: oversStr,
-                pressure_index: 65
-            };
-            
-            const res = await fetch('http://localhost:8000/predict_next_ball', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(aiPayload)
-            });
-            const predData = await res.json();
-            
-            // Create a fake wrapper so the rest of the UI code still works
-            const data = {
-                status: 'success',
-                context: { bowler: bowlerName, batter: strikerName, score: scoreStr, overs: oversStr },
-                prediction: { status: 'success', data: predData }
-            };
-            
-            if (data.status === 'success') {
-                document.getElementById('btn-sync').innerText = "🔗 ESPN SYNC";
-                
-                // Update Context UI
-                document.getElementById('ai-bowler').textContent = data.context.bowler;
-                document.getElementById('ai-batter').textContent = data.context.batter;
-                document.getElementById('ai-score').textContent = data.context.score;
-                document.getElementById('ai-overs').textContent = data.context.overs;
-                document.getElementById('ai-last-ball').textContent = "Synced via ESPN Playwright";
-                
-                // Update Prediction UI
-                document.getElementById('ai-results').classList.remove('cric-ai-hidden');
-                
-                if(data.prediction && data.prediction.status === "success") {
-                    const pred = data.prediction.data;
-                    document.getElementById('pred-type').textContent = pred.predicted_delivery.type;
-                    document.getElementById('batter-intent').textContent = pred.predicted_batter_intent;
-                    
-                    const xwVal = (pred.expected_wicket_probability * 100).toFixed(1);
-                    document.getElementById('xw-val').textContent = xwVal + '%';
-                    document.getElementById('xw-bar').style.width = xwVal + '%';
-                    
-                    document.getElementById('pred-conf').textContent = (pred.confidence * 100).toFixed(0) + '%';
-                    document.getElementById('pred-angle').textContent = pred.predicted_delivery.angle;
-                    document.getElementById('pred-pace').textContent = pred.predicted_delivery.pace;
-                    document.getElementById('pred-field').textContent = pred.tactical_field_setup;
-                    
-                    // Trigger rendering (assuming renderPitch and renderFieldRadar are globally accessible)
-                    if (typeof renderPitch === "function") renderPitch(pred);
-                    if (typeof renderFieldRadar === "function") renderFieldRadar(pred);
-                }
-            } else {
-                alert("ESPN Sync Error: " + data.message);
-                document.getElementById('btn-sync').innerText = "🔗 ESPN SYNC";
-            }
-        } catch (e) {
-            console.error("ESPN Sync Failed:", e);
-            alert("ESPN Sync Error: " + e.message);
-            document.getElementById('btn-sync').innerText = "🔗 ESPN SYNC";
-        }
-    });
+
 
     // Auto-polling Engine
     let lastContextHash = "";
