@@ -1,4 +1,6 @@
-function extractDeepMatchContext() {
+const cricProfileCache = {};
+
+async function extractDeepMatchContext() {
     let context = {
         bowler: "Unknown",
         batter: "Unknown",
@@ -10,7 +12,8 @@ function extractDeepMatchContext() {
         dew_pct: typeof currentDewPct !== 'undefined' ? currentDewPct : 30,
         wickets: 3,
         req_rate: 8.5,
-        bowling_angle: typeof currentBowlingAngle !== 'undefined' ? currentBowlingAngle : "Over the wicket"
+        bowling_angle: typeof currentBowlingAngle !== 'undefined' ? currentBowlingAngle : "Over the wicket",
+        scraped_style: "FAST_SEAM"
     };
 
     try {
@@ -81,6 +84,35 @@ function extractDeepMatchContext() {
                 context.req_rate = parseFloat(reqMatch[1]);
             }
         } // Closing if (url.includes("cricbuzz.com"))
+        
+        // --- 5. Stealth Profile Scraping ---
+        if (context.bowler !== "Unknown") {
+            if (cricProfileCache[context.bowler]) {
+                context.scraped_style = cricProfileCache[context.bowler];
+            } else {
+                // Look for bowler profile link in DOM
+                const links = Array.from(document.querySelectorAll("a[href*='/profiles/']"));
+                // Find a link that contains the bowler's last name or first name
+                const bowlerParts = context.bowler.split(" ");
+                const lastName = bowlerParts[bowlerParts.length - 1];
+                const profileLink = links.find(a => a.innerText.includes(lastName) || a.innerText.includes(context.bowler));
+                
+                if (profileLink) {
+                    console.log(`Cricket AI: Fetching profile for ${context.bowler} from ${profileLink.href}`);
+                    const resp = await fetch(profileLink.href);
+                    const html = await resp.text();
+                    // Regex to extract bowling style
+                    const styleMatch = html.match(/Bowling Style.*?<div[^>]*>([^<]+)<\/div>/si);
+                    if (styleMatch && styleMatch[1]) {
+                        const style = styleMatch[1].trim();
+                        cricProfileCache[context.bowler] = style;
+                        context.scraped_style = style;
+                        console.log(`Cricket AI: Profile Scraped! ${context.bowler} is ${style}`);
+                    }
+                }
+            }
+        }
+        
     } catch(e) {
         console.error("Cricket AI: Error extracting deep context", e);
     }
@@ -448,7 +480,7 @@ function injectSidebar() {
     let lastContextHash = "";
     
     async function runAutoPrediction() {
-        const currentCtx = extractDeepMatchContext();
+        const currentCtx = await extractDeepMatchContext();
         // Generate a hash to check if state changed (new ball bowled)
         const ctxHash = `${currentCtx.bowler}-${currentCtx.batter}-${currentCtx.last_over_string}`;
         
@@ -706,7 +738,7 @@ function injectSidebar() {
         history.scrollTop = history.scrollHeight;
         
         try {
-            const ctx = extractDeepMatchContext();
+            const ctx = await extractDeepMatchContext();
             const res = await fetch('http://localhost:8000/ask', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
