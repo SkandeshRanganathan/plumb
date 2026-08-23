@@ -10,11 +10,20 @@
   "host_permissions": [
     "http://localhost:8000/*",
     "https://*.espncricinfo.com/*",
-    "https://*.cricbuzz.com/*"
+    "https://*.cricbuzz.com/*",
+    "https://*.youtube.com/*",
+    "https://*.jiocinema.com/*",
+    "https://*.hotstar.com/*"
   ],
   "content_scripts": [
     {
-      "matches": ["https://*.espncricinfo.com/*", "https://*.cricbuzz.com/*"],
+      "matches": [
+        "https://*.espncricinfo.com/*",
+        "https://*.cricbuzz.com/*",
+        "https://*.youtube.com/*",
+        "https://*.jiocinema.com/*",
+        "https://*.hotstar.com/*"
+      ],
       "js": ["content.js"],
       "css": ["sidebar.css"]
     }
