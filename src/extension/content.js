@@ -458,10 +458,19 @@ function injectSidebar() {
         document.getElementById('btn-sync').innerText = "SYNCING...";
         
         try {
-            // 1. Fetch from ESPN directly (bypassing Akamai since we are a real browser extension)
-            const espnUrl = `https://www.espncricinfo.com/series/${seriesId}/game/${matchId}`;
-            const espnRes = await fetch(espnUrl);
-            const htmlText = await espnRes.text();
+            // 1. Fetch from ESPN via Background Service Worker to bypass CORS
+            const response = await new Promise((resolve) => {
+                chrome.runtime.sendMessage(
+                    { action: "fetch_espn", matchId: matchId, seriesId: seriesId },
+                    resolve
+                );
+            });
+            
+            if (!response.success) {
+                throw new Error("Background fetch failed: " + response.error);
+            }
+            
+            const htmlText = response.html;
             
             // 2. Extract __NEXT_DATA__ JSON
             const matchDataRegex = /<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/;
@@ -566,6 +575,7 @@ function injectSidebar() {
             }
         } catch (e) {
             console.error("ESPN Sync Failed:", e);
+            alert("ESPN Sync Error: " + e.message);
             document.getElementById('btn-sync').innerText = "🔗 ESPN SYNC";
         }
     });
