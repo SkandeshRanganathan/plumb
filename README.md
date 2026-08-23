@@ -1,70 +1,52 @@
-# Context-Aware Adaptive Cricket Ball Intelligence System
+# Cricket AI: Live Broadcast Companion (v2.0)
 
-A research-oriented AIML framework for understanding, modelling and predicting cricket-ball behaviour by combining ball-tracking data with **bowler characteristics, release geometry, pitch conditions, venue, weather, ball type, ball age and evolving ball-state information**.
+## Where We Started
+This project began as a static, research-oriented AIML framework called the *Context-Aware Adaptive Cricket Ball Intelligence System*. The original goal was to build a massive offline data pipeline processing HawkeyeStats, CricSheet, and Weather data through XGBoost physics models to perform anomaly detection and trajectory analysis (e.g. Ablation studies, SHAP explainability). 
 
-The system is designed around one central question:
+## The Evolution
+We fundamentally shifted the architecture from a static offline research pipeline into a **Live, Real-Time AI Companion**. 
 
-> **Can cricket-ball behaviour be predicted more accurately when the AI understands not only where the ball was released and where it travelled, but also who bowled it, how it was released, what state the ball was in, and the conditions under which it was delivered?**
+Here is what we built to get here:
+1. **Chrome Extension Frontend**: We developed a beautiful, professional overlay (`content.js`, `sidebar.css`) that injects directly into live scorecards like Cricbuzz.
+2. **FastAPI & PostgreSQL Backend**: We ripped out the heavy offline batch processing and built a blazing-fast real-time API (`main.py`) to serve predictions instantaneously.
+3. **Computer Vision & ST-MPDA**: We introduced `vision.py` to analyze broadcast frames, and the **ST-MPDA (Spatio-Temporal Markovian Pitch Degradation Algorithm)** in `pitch_analyzer.py` to calculate Par Scores, Pitch Wear, and Game Theory matrices dynamically.
+4. **Historical Dataset Integration (v2.0)**: After running into ESPN/Akamai firewall blocks, we pivoted to a smarter approach. We built `historical_training_data.csv` to act as the model's historical memory, overriding simple heuristics with actual ML-driven Expected Wicket (xW) probabilities.
+5. **Continuous Online Learning**: The AI actively "watches" the game with you. Every time a ball is bowled, it compares its prediction against the live commentary, extracts the actual outcome, and appends the data directly back into its dataset to get mathematically smarter as the match goes on.
 
-Unlike a conventional ball-tracking system whose primary objective is to reconstruct the observed trajectory, this project focuses on building an **adaptive intelligence layer around the trajectory**.
-
-The system attempts to estimate:
-
-> **What should this delivery have looked like under the current conditions?**
-
-and then compares that expectation with:
-
-> **What actually happened?**
-
-The difference between the expected and observed behaviour becomes a useful signal for trajectory analysis, unusual-delivery detection and downstream decision assistance.
+## Where We Are Right Now
+We have a fully functional **Live Predictive Engine**. 
+Instead of analyzing spreadsheets from a database, you now have an extension that sits on your screen during a live match, tracks the pitch wear, estimates the Par Score, predicts the exact pace, angle, and delivery type of the *very next ball*, and visually tracks LBW trajectories in real-time. 
 
 ---
 
-# Project Structure
-
+### Project Structure (Current Architecture)
 ```text
 cric/
-├── run_pipeline.py              ← Master run script (start here)
 ├── src/
-│   ├── config.py                ← All paths, bounds, constants
-│   ├── ingestion/
-│   │   ├── hawkeye_ingest.py    ← MODULE 1-A: Load + clean all 6 HawkeyeStats CSVs
-│   │   ├── cricsheet_join.py    ← MODULE 1-D: Venue/date join from CricSheet
-│   │   ├── weather_fetch.py     ← MODULE 1-E: Open-Meteo weather API
-│   │   └── master_dataset.py    ← MODULE 1-H: Pipeline orchestrator
-│   ├── features/
-│   │   ├── bowler_profiles.py  ← MODULE 1-C: Bowler career profile features
-│   │   └── ball_state.py       ← MODULE 1-G: Ball-state rolling features
-│   ├── models/
-│   │   ├── physics/
-│   │   │   └── physics_model.py        ← MODULE 6: Physics trajectory simulation
-│   │   ├── context_aware/
-│   │   │   └── trajectory_models.py    ← MODULE 7: XGBoost context-aware models
-│   │   ├── anomaly/
-│   │   │   └── anomaly_detection.py    ← MODULE 10: Unusual delivery detection
-│   │   ├── wide_ball/
-│   │   │   └── wide_ball_model.py      ← MODULE 11: Wide-ball decision assistance
-│   │   └── no_ball/
-│   │       └── no_ball_model.py        ← MODULE 12: No-ball classification
-│   ├── evaluation/
-│   │   └── ablation_study.py   ← Experiments 1-8: Feature ablation
-│   ├── explainability/
-│   │   └── shap_analysis.py    ← MODULE 13: SHAP explainability
-│   └── dashboard/
-│       └── dashboard.py        ← MODULE 15: Streamlit research dashboard
-├── data/
-│   ├── processed/               ← Intermediate parquet files
-│   ├── master/                  ← master_dataset.parquet (source of truth)
-│   ├── external/
-│   │   ├── cricsheet/           ← Downloaded CricSheet JSON files
-│   │   └── weather/             ← Cached Open-Meteo responses
-│   ├── bowler_profiles/         ← bowler_profiles.parquet + .csv
-│   └── ball_state/              ← ball_state_summary.parquet
-├── models/
-│   └── saved/                   ← All saved .pkl model files
-├── experiments/
-│   ├── results/                 ← ablation_results.csv, trajectory_experiments.csv
-│   └── plots/                   ← shap_*.png and other plots
-└── datasets/                    ← Raw data (git-cloned repos)
-    ├── hawkeye_stats/           ← 6 HawkeyeStats CSV files
-    └── cric360/                 ← Cric360 broadcast images
+│   ├── api/
+│   │   ├── main.py                  ← FastAPI Backend (Prediction Engine & Online Learning)
+│   │   ├── vision.py                ← Computer Vision broadcast analysis
+│   │   ├── pitch_analyzer.py        ← ST-MPDA Algorithm for Par Scores & Pitch Wear
+│   │   ├── historical_training_data.csv ← Core ML Dataset
+│   │   └── dataset_generator.py     ← Historical crawler
+│   ├── extension/
+│   │   ├── manifest.json            ← Chrome Extension Manifest (v3)
+│   │   ├── background.js            ← Service Worker for bypassing CORS
+│   │   ├── content.js               ← DOM Injection & Live Polling Logic
+│   │   └── sidebar.css              ← Styling for the UI
+```
+
+## How to Run
+
+1. **Start the AI Backend**:
+   ```bash
+   python -m src.api.main
+   ```
+2. **Install the Extension**:
+   - Go to `chrome://extensions/`
+   - Enable "Developer mode"
+   - Click "Load unpacked" and select the `src/extension` folder.
+3. **Analyze Live**:
+   - Open a live match on Cricbuzz.
+   - Click the **ENABLE VISION** button to calculate Pitch conditions and Par Scores.
+   - Watch the Next Ball Prediction engine learn and adapt dynamically!
