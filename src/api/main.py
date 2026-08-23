@@ -106,9 +106,21 @@ class DeliveryContext(BaseModel):
     req_rate: float = 8.5
     bowling_angle: str = "Over the wicket"
 
-class QueryRequest(BaseModel):
+class Message(BaseModel):
     query: str
     context: DeliveryContext
+    
+class FrameData(BaseModel):
+    image: str
+
+# ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@app.post("/analyze_frame")
+def analyze_frame(frame: FrameData):
+    """Computer Vision endpoint to analyze live broadcast video stream."""
+    from src.api.vision import analyze_broadcast_frame
+    result = analyze_broadcast_frame(frame.image)
+    return result
 
 @app.post("/predict_next_ball")
 @limiter.limit("15/minute")

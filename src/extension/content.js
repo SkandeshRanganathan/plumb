@@ -105,9 +105,28 @@ function injectSidebar() {
         <div class="cric-ai-header">
             <span style="font-size:18px; font-weight:900; letter-spacing:0.5px; color:#fff;">LIVE BROADCAST COMPANION</span>
             <div style="display:flex; gap:10px; align-items:center;">
+                <button id="btn-vision" style="background:#8b5cf6; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">👁️ ENABLE VISION</button>
                 <button id="test-end-match" style="background:#f43f5e; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">TEST POST-MATCH</button>
                 <span id="cric-ai-close" style="cursor:pointer; font-size:20px; opacity:0.7; transition: 0.2s;">&times;</span>
             </div>
+        </div>
+        
+        <!-- CV Vision Overlay Data -->
+        <div id="vision-results" class="cric-ai-hidden" style="background:#1e1b4b; margin:10px; padding:10px; border-radius:6px; border-left:4px solid #8b5cf6; font-size:11px;">
+            <div style="color:#a78bfa; font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between;">
+                <span>BROADCAST VISION ACTIVE</span>
+                <span id="vision-status" style="color:#34d399;">Scanning...</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                <span style="color:#d1d5db;">Detected Pitch:</span>
+                <span id="vis-pitch" style="color:#fff; font-weight:bold;">--</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span style="color:#d1d5db;">Field Setup:</span>
+                <span id="vis-field" style="color:#fff; font-weight:bold;">--</span>
+            </div>
+            <canvas id="hidden-vid-canvas" style="display:none;"></canvas>
+            <video id="hidden-vid-stream" style="display:none;" autoplay></video>
         </div>
         
         <!-- Scrollable Content Area -->
@@ -308,6 +327,72 @@ function injectSidebar() {
     });
     document.getElementById('cric-chat-close').addEventListener('click', () => {
         document.getElementById('cric-chat-popup').classList.add('cric-ai-hidden');
+    });
+    
+    // Broadcast Vision Logic
+    let visionInterval = null;
+    let videoStream = null;
+    
+    document.getElementById('btn-vision').addEventListener('click', async () => {
+        if (visionInterval) {
+            // Stop Vision
+            clearInterval(visionInterval);
+            visionInterval = null;
+            if (videoStream) {
+                videoStream.getTracks().forEach(t => t.stop());
+            }
+            document.getElementById('vision-results').classList.add('cric-ai-hidden');
+            document.getElementById('btn-vision').innerText = '👁️ ENABLE VISION';
+            document.getElementById('btn-vision').style.background = '#8b5cf6';
+            return;
+        }
+        
+        try {
+            // Request user to select the broadcast tab
+            videoStream = await navigator.mediaDevices.getDisplayMedia({
+                video: { displaySurface: "browser" },
+                audio: false
+            });
+            
+            const videoEl = document.getElementById('hidden-vid-stream');
+            videoEl.srcObject = videoStream;
+            
+            document.getElementById('vision-results').classList.remove('cric-ai-hidden');
+            document.getElementById('btn-vision').innerText = '🔴 STOP VISION';
+            document.getElementById('btn-vision').style.background = '#ef4444';
+            
+            // Poll OpenCV backend every 4 seconds
+            visionInterval = setInterval(async () => {
+                const canvas = document.getElementById('hidden-vid-canvas');
+                canvas.width = videoEl.videoWidth || 1280;
+                canvas.height = videoEl.videoHeight || 720;
+                
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                
+                try {
+                    const res = await fetch('http://localhost:8000/analyze_frame', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: dataUrl })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        document.getElementById('vision-status').innerText = "Live";
+                        document.getElementById('vis-pitch').innerText = data.pitch_type;
+                        document.getElementById('vis-field').innerText = data.field_setup;
+                    }
+                } catch(err) {
+                    console.error("Vision API Error", err);
+                }
+            }, 4000);
+            
+        } catch (e) {
+            console.error("Vision Permission Denied", e);
+            alert("Broadcast Vision requires permission to view the stream tab.");
+        }
     });
     
     // Tactical Overrides listeners
