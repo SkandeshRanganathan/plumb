@@ -1,52 +1,39 @@
-# Cricket AI: Live Broadcast Companion (v2.0)
+# Context-Aware Adaptive Cricket Ball Intelligence System (Dual Architecture)
 
-## Where We Started
-This project began as a static, research-oriented AIML framework called the *Context-Aware Adaptive Cricket Ball Intelligence System*. The original goal was to build a massive offline data pipeline processing HawkeyeStats, CricSheet, and Weather data through XGBoost physics models to perform anomaly detection and trajectory analysis (e.g. Ablation studies, SHAP explainability). 
+This project has evolved into a massive **Dual-Architecture Framework**. It contains two distinct, but incredibly powerful, halves:
 
-## The Evolution
-We fundamentally shifted the architecture from a static offline research pipeline into a **Live, Real-Time AI Companion**. 
-
-Here is what we built to get here:
-1. **Chrome Extension Frontend**: We developed a beautiful, professional overlay (`content.js`, `sidebar.css`) that injects directly into live scorecards like Cricbuzz.
-2. **FastAPI & PostgreSQL Backend**: We ripped out the heavy offline batch processing and built a blazing-fast real-time API (`main.py`) to serve predictions instantaneously.
-3. **Computer Vision & ST-MPDA**: We introduced `vision.py` to analyze broadcast frames, and the **ST-MPDA (Spatio-Temporal Markovian Pitch Degradation Algorithm)** in `pitch_analyzer.py` to calculate Par Scores, Pitch Wear, and Game Theory matrices dynamically.
-4. **Historical Dataset Integration (v2.0)**: After running into ESPN/Akamai firewall blocks, we pivoted to a smarter approach. We built `historical_training_data.csv` to act as the model's historical memory, overriding simple heuristics with actual ML-driven Expected Wicket (xW) probabilities.
-5. **Continuous Online Learning**: The AI actively "watches" the game with you. Every time a ball is bowled, it compares its prediction against the live commentary, extracts the actual outcome, and appends the data directly back into its dataset to get mathematically smarter as the match goes on.
-
-## Where We Are Right Now
-We have a fully functional **Live Predictive Engine**. 
-Instead of analyzing spreadsheets from a database, you now have an extension that sits on your screen during a live match, tracks the pitch wear, estimates the Par Score, predicts the exact pace, angle, and delivery type of the *very next ball*, and visually tracks LBW trajectories in real-time. 
+1. **The Core Research Framework (The Main Project)**: A heavy, offline Machine Learning pipeline designed to parse millions of data points (HawkeyeStats, CricSheet, Weather APIs) to run physics simulations, anomaly detection, and ablation studies.
+2. **The Live Broadcast Companion (The Chrome Extension)**: A real-time predictive engine that sits as an overlay on your browser during live matches. It uses Computer Vision and our custom ST-MPDA algorithm to predict the *very next ball* as you watch.
 
 ---
 
-### Project Structure (Current Architecture)
-```text
-cric/
-├── src/
-│   ├── api/
-│   │   ├── main.py                  ← FastAPI Backend (Prediction Engine & Online Learning)
-│   │   ├── vision.py                ← Computer Vision broadcast analysis
-│   │   ├── pitch_analyzer.py        ← ST-MPDA Algorithm for Par Scores & Pitch Wear
-│   │   ├── historical_training_data.csv ← Core ML Dataset
-│   │   └── dataset_generator.py     ← Historical crawler
-│   ├── extension/
-│   │   ├── manifest.json            ← Chrome Extension Manifest (v3)
-│   │   ├── background.js            ← Service Worker for bypassing CORS
-│   │   ├── content.js               ← DOM Injection & Live Polling Logic
-│   │   └── sidebar.css              ← Styling for the UI
+## 🏗️ Architecture 1: The Core Research Framework (Main Project)
+This is the foundational brain of the project. It focuses on large-scale trajectory analysis and answering the question: *What should this delivery have looked like under current conditions, and what actually happened?*
+
+- **Data Ingestion Pipeline**: Scrapes and merges Hawkeye stats, CricSheet match JSONs, and Open-Meteo weather data into a massive `master_dataset.parquet`.
+- **Feature Engineering**: Tracks evolving ball-state (scuffing over time) and bowler career profiles.
+- **Physics Models**: Uses XGBoost to simulate exact ball trajectories.
+- **Anomaly Detection**: Flags unusual deliveries by computing the difference between expected and observed physics behavior.
+- **Evaluation & SHAP**: Runs ablation studies and SHAP explainability plots for research analysis.
+
+**To run the Main Project:**
+```bash
+python run_pipeline.py                    # Full pipeline (CricSheet + Weather)
+python run_pipeline.py --models-only      # Skip data prep, run models only
+python run_pipeline.py --dashboard        # Launch the Streamlit dashboard
 ```
 
-## How to Run
+---
 
-1. **Start the AI Backend**:
-   ```bash
-   python -m src.api.main
-   ```
-2. **Install the Extension**:
-   - Go to `chrome://extensions/`
-   - Enable "Developer mode"
-   - Click "Load unpacked" and select the `src/extension` folder.
-3. **Analyze Live**:
-   - Open a live match on Cricbuzz.
-   - Click the **ENABLE VISION** button to calculate Pitch conditions and Par Scores.
-   - Watch the Next Ball Prediction engine learn and adapt dynamically!
+## 🚀 Architecture 2: The Live Broadcast Companion (v2.0)
+We built a real-time front-end on top of the backend intelligence to serve predictions instantly while you watch live matches (e.g., on Cricbuzz).
+
+- **Chrome Extension Overlay**: Injects a sleek UI directly into the live scorecard (`content.js`, `sidebar.css`).
+- **FastAPI Backend (`main.py`)**: A real-time API server that handles extension requests.
+- **Computer Vision & ST-MPDA (`vision.py`, `pitch_analyzer.py`)**: Dynamically analyzes live broadcast frames to estimate pitch wear, Par Scores, and Toss Game Theory matrices using the Spatio-Temporal Markovian Pitch Degradation Algorithm.
+- **Live Online Learning**: The AI actively "watches" the game. Every time a ball is bowled, it compares its prediction against the live commentary and automatically appends the outcome to `historical_training_data.csv`, meaning the model trains itself in real-time.
+
+**To run the Live Companion:**
+1. **Start the AI Backend**: `python -m src.api.main`
+2. **Install Extension**: Load the `src/extension/` folder in `chrome://extensions/`.
+3. Open Cricbuzz, hit **ENABLE VISION**, and watch the AI predict the next ball!
