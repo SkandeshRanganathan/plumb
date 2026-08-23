@@ -355,20 +355,35 @@ function injectSidebar() {
             });
             
             const videoEl = document.getElementById('hidden-vid-stream');
+            videoEl.muted = true;
+            videoEl.playsInline = true;
             videoEl.srcObject = videoStream;
+            videoEl.play().catch(e => console.error("Video play failed:", e));
             
             document.getElementById('vision-results').classList.remove('cric-ai-hidden');
             document.getElementById('btn-vision').innerText = '🔴 STOP VISION';
             document.getElementById('btn-vision').style.background = '#ef4444';
+            document.getElementById('vision-status').innerText = "Live";
+            document.getElementById('vision-status').style.color = "#34d399";
             
             // Poll OpenCV backend every 4 seconds
             visionInterval = setInterval(async () => {
+                if (!videoEl || videoEl.readyState < 2) {
+                    console.log("Video not ready yet");
+                    return;
+                }
+                
                 const canvas = document.getElementById('hidden-vid-canvas');
                 canvas.width = videoEl.videoWidth || 1280;
                 canvas.height = videoEl.videoHeight || 720;
                 
                 const ctx = canvas.getContext('2d');
-                ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                try {
+                    ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+                } catch(err) {
+                    console.error("Canvas drawImage failed", err);
+                    return;
+                }
                 
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                 
