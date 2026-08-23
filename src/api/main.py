@@ -154,7 +154,7 @@ def sync_live_match(req: SyncLiveRequest, request: Request, db: Session = Depend
     from espncricinfo.match import Match
     from espncricinfo.player import Player
     try:
-        match = Match(req.match_id, req.series_id)
+        match = Match(req.match_id)
         
         # Get live context
         current_innings = match.innings[-1] if match.innings else None
