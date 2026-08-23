@@ -148,7 +148,20 @@ def analyze_pitch_conditions(req: PitchAnalysisRequest):
 def analyze_frame(frame: FrameData):
     """Computer Vision endpoint to analyze live broadcast video stream."""
     from src.api.vision import analyze_broadcast_frame
+    from src.api.pitch_analyzer import pitch_engine
+    
     result = analyze_broadcast_frame(frame.image)
+    
+    # Generate Pitch Intelligence based on the CV detected surface
+    detected_pitch = result.get('pitch_type', 'Standard Pitch')
+    pitch_intel = pitch_engine.analyze(pitch_type=detected_pitch, pitch_report_text="", match_format="T20") # Default to T20 for live broadcast
+    
+    # Inject intelligence into the extension response
+    result["par_score"] = pitch_intel["par_score"]
+    result["toss_decision"] = pitch_intel["toss_decision"]
+    result["win_prob"] = pitch_intel["game_theory_matrix"]["bat_first"]["expected_win_prob"]
+    result["optimal_length"] = pitch_intel["optimal_bowling_length"]
+    
     return result
 
 @app.post("/predict_next_ball")

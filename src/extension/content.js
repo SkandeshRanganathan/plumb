@@ -121,9 +121,21 @@ function injectSidebar() {
                 <span style="color:#d1d5db;">Detected Pitch:</span>
                 <span id="vis-pitch" style="color:#fff; font-weight:bold;">--</span>
             </div>
-            <div style="display:flex; justify-content:space-between;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
                 <span style="color:#d1d5db;">Field Setup:</span>
                 <span id="vis-field" style="color:#fff; font-weight:bold;">--</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px; border-top:1px solid #3730a3; padding-top:4px; margin-top:4px;">
+                <span style="color:#d1d5db;">Par Score:</span>
+                <span id="vis-par" style="color:#fcd34d; font-weight:bold;">--</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:2px;">
+                <span style="color:#d1d5db;">Toss/Win Prob:</span>
+                <span id="vis-toss" style="color:#34d399; font-weight:bold;">--</span>
+            </div>
+            <div style="margin-top:4px; background:rgba(0,0,0,0.3); padding:6px; border-radius:4px; border-left:2px solid #38bdf8;">
+                <span style="color:#9ca3af; display:block; margin-bottom:2px;">Optimal Length:</span>
+                <span id="vis-length" style="color:#bae6fd; font-style:italic;">--</span>
             </div>
             <canvas id="hidden-vid-canvas" style="display:none;"></canvas>
             <video id="hidden-vid-stream" style="display:none;" autoplay></video>
@@ -398,6 +410,13 @@ function injectSidebar() {
                         document.getElementById('vision-status').innerText = "Live";
                         document.getElementById('vis-pitch').innerText = data.pitch_type;
                         document.getElementById('vis-field').innerText = data.field_setup;
+                        
+                        // Injecting Pitch Intelligence Data
+                        if (data.par_score) {
+                            document.getElementById('vis-par').innerText = data.par_score;
+                            document.getElementById('vis-toss').innerText = `${data.toss_decision} (${data.win_prob})`;
+                            document.getElementById('vis-length').innerText = data.optimal_length;
+                        }
                     }
                 } catch(err) {
                     console.error("Vision API Error", err);
