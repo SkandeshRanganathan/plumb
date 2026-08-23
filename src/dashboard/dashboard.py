@@ -717,67 +717,89 @@ if page == "Live Delivery Analysis":
             rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Effort (135km/h)"
             rec_field = "Standard field setting"
             
-            if format_val == "T20":
-                if pressure_val > 70:
-                    if not is_spin:
-                        is_medium = "MEDIUM" in bowling_style and "FAST" not in bowling_style
-                        if dew_pct > 60:
-                            if is_medium:
-                                rec_title, rec_x, rec_y = "Slower Bouncer / Into Pitch", 0.0, 11.0
-                                rec_desc = f"High dew ({dew_pct}%) makes yorkers risky. As a medium pacer, roll your fingers over the ball and dig it short."
-                                rec_angle = "Over the wicket"
-                                rec_pace = "Off-Cutter (112km/h)"
-                                rec_field = "Deep Square Leg and Deep Mid Wicket back. Mid-off up."
+            rag_override_active = False
+            try:
+                import json
+                with open("src/data/batter_profiles.json", "r") as f:
+                    batter_profiles = json.load(f)
+                batter_name_lower = batter_name.lower()
+                for b_key, b_profile in batter_profiles.items():
+                    if b_key.lower() in batter_name_lower or batter_name_lower in b_key.lower():
+                        rag_override_active = True
+                        rec_title = f"🎯 RAG TARGET: {b_profile['tactical_override']['title']}"
+                        rec_desc = f"KNOWN WEAKNESS MATCHED: {b_profile['weakness']} Tactical override activated."
+                        rec_x = b_profile['tactical_override']['x'] * off_mult
+                        rec_y = b_profile['tactical_override']['y']
+                        rec_angle = b_profile['tactical_override']['angle']
+                        rec_pace = b_profile['tactical_override']['pace']
+                        rec_field = "Custom field set for specific batter weakness."
+                        break
+            except Exception:
+                pass
+                
+            if not rag_override_active:
+                if format_val == "T20":
+                    if pressure_val > 70:
+                        if not is_spin:
+                            is_medium = "MEDIUM" in bowling_style and "FAST" not in bowling_style
+                            if dew_pct > 60:
+                                if is_medium:
+                                    rec_title, rec_x, rec_y = "Slower Bouncer / Into Pitch", 0.0, 11.0
+                                    rec_desc = f"High dew ({dew_pct}%) makes yorkers risky. As a medium pacer, roll your fingers over the ball and dig it short."
+                                    rec_angle = "Over the wicket"
+                                    rec_pace = "Off-Cutter (112km/h)"
+                                    rec_field = "Deep Square Leg and Deep Mid Wicket back. Mid-off up."
+                                else:
+                                    rec_title, rec_x, rec_y = "Hard Length / Into the Pitch", 0.0, 10.0
+                                    rec_desc = f"High dew ({dew_pct}%) makes yorkers extremely risky. Hit the deck hard (back-of-a-length) to avoid slipping a full toss."
+                                    rec_angle = "Over the wicket"
+                                    rec_pace = "Hit the Deck Hard (138km/h)"
+                                    rec_field = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
                             else:
-                                rec_title, rec_x, rec_y = "Hard Length / Into the Pitch", 0.0, 10.0
-                                rec_desc = f"High dew ({dew_pct}%) makes yorkers extremely risky. Hit the deck hard (back-of-a-length) to avoid slipping a full toss."
-                                rec_angle = "Over the wicket"
-                                rec_pace = "Hit the Deck Hard (138km/h)"
-                                rec_field = "Deep Square Leg and Fine Leg back. Mid-on and Mid-off up to invite the drive."
+                                if is_medium:
+                                    rec_title, rec_x, rec_y = "Wide Slower Ball", 0.55 * off_mult, 16.0
+                                    rec_desc = "High pressure death over. Medium pacers should use the wide slower ball out of the swinging arc."
+                                    rec_angle = "Around the wicket"
+                                    rec_pace = "Back-of-hand Slower Ball (115km/h)"
+                                    rec_field = "Deep Point and Sweeper Cover on the boundary. Fine Leg inside."
+                                else:
+                                    rec_title, rec_x, rec_y = "Wide Yorker", 0.45 * off_mult, 19.0
+                                    rec_desc = "High pressure death over. Target the wide yorker to evade the swinging arc."
+                                    rec_angle = "Around the wicket"
+                                    rec_pace = "Fast and Full (140+km/h)"
+                                    rec_field = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
                         else:
-                            if is_medium:
-                                rec_title, rec_x, rec_y = "Wide Slower Ball", 0.55 * off_mult, 16.0
-                                rec_desc = "High pressure death over. Medium pacers should use the wide slower ball out of the swinging arc."
-                                rec_angle = "Around the wicket"
-                                rec_pace = "Back-of-hand Slower Ball (115km/h)"
-                                rec_field = "Deep Point and Sweeper Cover on the boundary. Fine Leg inside."
-                            else:
-                                rec_title, rec_x, rec_y = "Wide Yorker", 0.45 * off_mult, 19.0
-                                rec_desc = "High pressure death over. Target the wide yorker to evade the swinging arc."
-                                rec_angle = "Around the wicket"
-                                rec_pace = "Fast and Full (140+km/h)"
-                                rec_field = "Deep Point and Third Man on the boundary. Fine Leg inside the circle."
+                            rec_title, rec_x, rec_y = "Flatter, Outside Off", 0.35 * off_mult, 14.0
+                            rec_desc = "High pressure T20. Fire it in flat outside off stump to avoid being swept."
+                            rec_angle = "Around the wicket"
+                            rec_pace = "Flat and Fast (95km/h)"
+                            rec_field = "Long Off and Deep Point boundary riders. Catching cover in place."
                     else:
-                        rec_title, rec_x, rec_y = "Flatter, Outside Off", 0.35 * off_mult, 14.0
-                        rec_desc = "High pressure T20. Fire it in flat outside off stump to avoid being swept."
+                        rec_title, rec_x, rec_y = "Top of Off Stump", 0.15 * off_mult, 13.0
+                        rec_desc = "Building pressure. Hit the top of off stump consistently."
+                        rec_angle = "Over the wicket"
+                        rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Line & Length (135km/h)"
+                        rec_field = "Classic Test Match field. Slips in place, saving the single in the ring."
+                else: # Test / ODI
+                    if wickets < 3 and req_rate < 5.0:
+                        rec_title, rec_x, rec_y = "4th Stump Corridor", 0.25 * off_mult, 12.5
+                        rec_desc = "Early innings in longer format. Bowl in the channel of uncertainty. Invite the drive."
+                        rec_angle = "Over the wicket"
+                        rec_pace = "Flighted Delivery (78km/h)" if is_spin else "Swing Pace (132km/h)"
+                        rec_field = "3 Slips and a Gully. Attacking field to find the edge."
+                    elif wickets >= 7:
+                        rec_title, rec_x, rec_y = "Toe-Crushing Yorker", 0.0, 19.5
+                        rec_desc = "Tailenders at the crease. Attack the stumps with pace and full length."
                         rec_angle = "Around the wicket"
-                        rec_pace = "Flat and Fast (95km/h)"
-                        rec_field = "Long Off and Deep Point boundary riders. Catching cover in place."
-                else:
-                    rec_title, rec_x, rec_y = "Top of Off Stump", 0.15 * off_mult, 13.0
-                    rec_desc = "Building pressure. Hit the top of off stump consistently."
-                    rec_angle = "Over the wicket"
-                    rec_pace = "Stock Spin (85km/h)" if is_spin else "Standard Line & Length (135km/h)"
-                    rec_field = "Classic Test Match field. Slips in place, saving the single in the ring."
-            else: # Test / ODI
-                if wickets < 3 and req_rate < 5.0:
-                    rec_title, rec_x, rec_y = "4th Stump Corridor", 0.25 * off_mult, 12.5
-                    rec_desc = "Early innings in longer format. Bowl in the channel of uncertainty. Invite the drive."
-                    rec_angle = "Over the wicket"
-                    rec_pace = "Flighted Delivery (78km/h)" if is_spin else "Swing Pace (132km/h)"
-                    rec_field = "3 Slips and a Gully. Attacking field to find the edge."
-                elif wickets >= 7:
-                    rec_title, rec_x, rec_y = "Toe-Crushing Yorker", 0.0, 19.5
-                    rec_desc = "Tailenders at the crease. Attack the stumps with pace and full length."
-                    rec_angle = "Around the wicket"
-                    rec_pace = "Flat and Fast (95km/h)" if is_spin else "Effort Ball (145km/h)"
-                    rec_field = "Short Leg and Leg Slip in place to intimidate, but bowling full."
-                else:
-                    rec_title, rec_x, rec_y = "Good Length, Tight Line", 0.05 * off_mult, 13.5
-                    rec_desc = "Middle phase. Dry up the runs by bowling stump-to-stump."
-                    rec_angle = "Over the wicket"
-                    rec_pace = "Stock Spin (85km/h)" if is_spin else "Stock Delivery (135km/h)"
-                    rec_field = "Standard field setting"
+                        rec_pace = "Flat and Fast (95km/h)" if is_spin else "Effort Ball (145km/h)"
+                        rec_field = "Short Leg and Leg Slip in place to intimidate, but bowling full."
+                    else:
+                        rec_title, rec_x, rec_y = "Good Length, Tight Line", 0.05 * off_mult, 13.5
+                        rec_desc = "Middle phase. Dry up the runs by bowling stump-to-stump."
+                        rec_angle = "Over the wicket"
+                        rec_pace = "Stock Spin (85km/h)" if is_spin else "Stock Delivery (135km/h)"
+                        rec_field = "Standard field setting"
+
 
             # Overlay target on 3D Trajectory Figure
             # 1. The precise target circle on the ground

@@ -9,6 +9,16 @@
             "pace": "Swing Pace (132km/h)"
         }
     },
+    "Ajitesh Guruswamy": {
+        "weakness": "Struggles to rotate strike against hard lengths into the ribcage. Often mistimes the pull shot when rushed.",
+        "tactical_override": {
+            "title": "Hard Length / Ribcage Target (Anti-Ajitesh)",
+            "x": -0.15,
+            "y": 9.0,
+            "angle": "Around the wicket",
+            "pace": "Heavy Ball (138km/h)"
+        }
+    },
     "Andre Russell": {
         "weakness": "Struggles to get under the wide yorker outside off, especially if it is bowled at express pace.",
         "tactical_override": {
