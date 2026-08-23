@@ -16,10 +16,10 @@ class PitchIntelligenceEngine:
         
         # 1. Advanced NLP Keyword Matching
         is_green = any(w in pitch_type for w in ["green", "seam"]) or any(w in pitch_report for w in ["grass", "swing", "seam movement", "overcast", "cloud"])
-        is_dry = any(w in pitch_type for w in ["dry", "dust"]) or any(w in pitch_report for w in ["spin", "cracks", "dry", "dust", "turn", "wear"])
+        is_dry = any(w in pitch_type for w in ["dry", "dust"]) or any(w in pitch_report for w in ["spin", "cracks", "dry", "dust", "turn", "wear", "slow"])
         is_damp = any(w in pitch_type for w in ["damp"]) or any(w in pitch_report for w in ["sticky", "moisture", "rain", "wet"])
         is_bouncy = any(w in pitch_report for w in ["bounce", "pace friendly", "hard", "carry"])
-        is_belter = any(w in pitch_report for w in ["flat", "batting paradise", "belter", "nothing for the bowlers", "true"])
+        is_belter = any(w in pitch_report for w in ["flat", "batting paradise", "belter", "nothing for the bowlers", "true", "run feast", "fireworks", "high scoring", "comes onto the bat"])
         
         # 2. Base Adjustments
         if match_format == "T20":
@@ -35,46 +35,47 @@ class PitchIntelligenceEngine:
         wear_heatmap_type = "standard"
         optimal_length = "Good Length (6m-8m)"
         
-        # 3. Dynamic Scoring Adjustments based on combined factors
+        # 3. Dynamic Additive Scoring Adjustments
         score_modifier = 0
         
         if is_damp:
             score_modifier -= (35 if match_format == "T20" else 80)
             toss_decision = "Bowl First"
-            win_prob_bat_1st = 25.0
+            win_prob_bat_1st -= 25.0
             wear_heatmap_type = "damp_sticky"
             optimal_length = "Back of a Length (8m-10m) to let the ball misbehave off the sticky surface."
             
-        elif is_green or is_bouncy:
-            # Pace friendly / bounce / grass favors fast bowlers heavily early on
-            score_modifier -= (20 if match_format == "T20" else 60)
-            toss_decision = "Bowl First"
-            win_prob_bat_1st = 35.0
-            wear_heatmap_type = "green_seaming"
-            optimal_length = "Full (4m-6m) to invite the drive and induce edges with the extra bounce."
-            if is_dry: # E.g. Perth (Hard, bouncy, but dry)
-                toss_decision = "Bat First"
-                win_prob_bat_1st = 60.0
+        if is_green:
+            score_modifier -= (15 if match_format == "T20" else 40)
+            toss_decision = "Bowl First" if not is_damp else toss_decision
+            win_prob_bat_1st -= 15.0
+            wear_heatmap_type = "green_seaming" if wear_heatmap_type == "standard" else wear_heatmap_type
+            if optimal_length == "Good Length (6m-8m)":
+                optimal_length = "Full (4m-6m) to invite the drive and induce edges with the movement."
                 
-        elif is_dry:
+        if is_bouncy:
+            score_modifier -= (10 if match_format == "T20" else 20)
+            win_prob_bat_1st -= 5.0
+            
+        if is_dry:
             # Spin friendly, gets worse as match progresses
             score_modifier -= (10 if match_format == "T20" else 30)
             toss_decision = "Bat First"  # Bat before it deteriorates
-            win_prob_bat_1st = 75.0
+            win_prob_bat_1st += 20.0
             wear_heatmap_type = "dusty_spinning"
             optimal_length = "Hard Length (8m) to extract uneven bounce and let the cracks do the work."
             
-        elif is_belter:
+        if is_belter:
+            # Run feast! Overrides negative score modifiers heavily in white-ball cricket.
+            # E.g. Grass + Belter in T20 = Ball comes onto the bat nicely!
             score_modifier += (35 if match_format == "T20" else 100)
-            toss_decision = "Bat First"
-            win_prob_bat_1st = 65.0
+            toss_decision = "Bowl First" if match_format == "T20" else "Bat First" # T20 chasing is easier on a belter
+            win_prob_bat_1st += (5.0 if match_format == "T20" else 15.0)
             wear_heatmap_type = "flat_belter"
-            optimal_length = "Yorkers and Wide Lines. Pitch offers nothing, rely on variations."
-            
-        else:
-            # Standard
-            score_modifier += 0
-            win_prob_bat_1st = 55.0
+            optimal_length = "Yorkers and Wide Lines. Pitch is flat, rely on defensive variations and pace off."
+
+        # Bound win probability
+        win_prob_bat_1st = max(10.0, min(90.0, win_prob_bat_1st))
             
         par_score += score_modifier
         
