@@ -118,7 +118,32 @@ class PitchAnalysisRequest(BaseModel):
     pitch_report: str = ""
     format: str = "T20"
 
+class CustomPlayerRequest(BaseModel):
+    player_name: str
+    is_spin: bool
+    bowling_style_str: str
+    avg_pace: float
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
+@app.post("/api/players/custom")
+def add_custom_player(req: CustomPlayerRequest, db: Session = Depends(get_db)):
+    # Check if already exists
+    existing = db.query(CustomPlayerProfile).filter(CustomPlayerProfile.player_name == req.player_name).first()
+    if existing:
+        existing.is_spin = req.is_spin
+        existing.bowling_style_str = req.bowling_style_str
+        existing.avg_pace = req.avg_pace
+    else:
+        new_player = CustomPlayerProfile(
+            player_name=req.player_name,
+            is_spin=req.is_spin,
+            bowling_style_str=req.bowling_style_str,
+            avg_pace=req.avg_pace
+        )
+        db.add(new_player)
+    db.commit()
+    return {"status": "success", "message": f"Saved {req.player_name} to database."}
 
 @app.post("/analyze_pitch_conditions")
 def analyze_pitch_conditions(req: PitchAnalysisRequest):
@@ -187,6 +212,14 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     is_spin = "spin" in bowling_style_str or "orthodox" in bowling_style_str or "break" in bowling_style_str or "googly" in bowling_style_str
     is_left_arm = "left-arm" in bowling_style_str
     is_medium = "medium" in bowling_style_str
+    
+    # 0.5 PostgreSQL Crowdsourced DB Integration (Overrides Kaggle if unknown)
+    custom_bowler = db.query(CustomPlayerProfile).filter(CustomPlayerProfile.player_name == bowler).first()
+    if custom_bowler and bowling_style_str == "unknown":
+        bowling_style_str = custom_bowler.bowling_style_str.lower()
+        is_spin = custom_bowler.is_spin
+        is_medium = "medium" in bowling_style_str
+        is_left_arm = "left-arm" in bowling_style_str
     
     # Fallback to scraped if unknown
     if delivery.scraped_style == "SPIN_OVERRIDE":
@@ -683,7 +716,11 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
         analytics += f"⚡ Avg Pace: {b_data.get('bp_avg_speed', 135):.1f} kph\n"
         analytics += f"🎯 Primary Weapon: Hard Lengths & Cutters"
     else:
-        if is_spin:
+        if custom_bowler and bowling_style_str != "unknown":
+            display_style = custom_bowler.bowling_style_str.title()
+            pace = custom_bowler.avg_pace
+            analytics += f"⚡ Avg Pace: {pace} kph\n🎯 Primary Weapon: {'Flight and Drift' if is_spin else 'Seam variations'} ({display_style})"
+        elif is_spin:
             display_style = bowling_style_str.title() if bowling_style_str != "unknown" else delivery.scraped_style
             analytics += f"⚡ Est. Pace: ~85 kph\n🎯 Primary Weapon: Flight and Drift ({display_style})"
         else:
@@ -734,7 +771,8 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
         "expected_field": field_pred,
         "over_history": balls_list,
         "situational_plan": game_plan,
-        "field_map": f_map
+        "field_map": f_map,
+        "is_unknown_bowler": bowling_style_str == "unknown" and delivery.scraped_style == "FAST_SEAM"
     }
 
 @app.post("/predict")

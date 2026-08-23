@@ -1,4 +1,5 @@
 const cricProfileCache = {};
+window.identifiedPlayersPrompted = window.identifiedPlayersPrompted || {};
 
 async function extractDeepMatchContext() {
     let context = {
@@ -86,10 +87,7 @@ async function extractDeepMatchContext() {
         } // Closing if (url.includes("cricbuzz.com"))
         
         // --- 5. Stealth Profile Scraping ---
-        if (typeof window.currentBowlingStyleOverride !== 'undefined' && window.currentBowlingStyleOverride !== "Auto-Detect") {
-            context.scraped_style = window.currentBowlingStyleOverride;
-            console.log(`Cricket AI: Style OVERRIDE applied -> ${context.scraped_style}`);
-        } else if (context.bowler !== "Unknown") {
+        if (context.bowler !== "Unknown") {
             if (cricProfileCache[context.bowler]) {
                 context.scraped_style = cricProfileCache[context.bowler];
             } else {
@@ -330,14 +328,6 @@ function injectSidebar() {
                             <option value="Around the wicket">Around the wicket</option>
                         </select>
                     </div>
-                    <div style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-size:12px; color:#9ca3af;">Bowling Style:</span>
-                        <select id="style-override" style="background:#374151; color:#fff; border:1px solid #4b5563; padding:4px; border-radius:4px; font-size:11px;">
-                            <option value="Auto-Detect">Auto-Detect</option>
-                            <option value="SPIN_OVERRIDE">Spin</option>
-                            <option value="PACE_OVERRIDE">Pace</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div class="cric-ai-card">
@@ -347,6 +337,48 @@ function injectSidebar() {
             </div>
             
             <div id="chat-response" class="chat-response cric-ai-hidden"></div>
+        </div>
+        
+        <!-- Identify Player Modal -->
+        <div id="cric-identify-modal" style="display:none; position:absolute; top:30%; right:340px; width:300px; background:#111827; border:1px solid #374151; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.8); z-index:9999; padding:15px;">
+            <div style="color:#f59e0b; font-weight:bold; font-size:14px; margin-bottom:10px;">Identify Unknown Player</div>
+            <div style="color:#d1d5db; font-size:12px; margin-bottom:15px;">
+                Cricbuzz profile missing for <strong id="identify-player-name" style="color:#fff;">--</strong>. Please identify them:
+            </div>
+            
+            <div style="margin-bottom:10px;">
+                <label style="color:#9ca3af; font-size:11px;">Primary Type:</label>
+                <select id="id-type" style="width:100%; background:#374151; color:#fff; border:1px solid #4b5563; padding:6px; border-radius:4px; margin-top:4px;">
+                    <option value="pace">Fast / Medium Pace</option>
+                    <option value="spin">Spin</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom:10px;">
+                <label style="color:#9ca3af; font-size:11px;">Specific Style:</label>
+                <select id="id-style" style="width:100%; background:#374151; color:#fff; border:1px solid #4b5563; padding:6px; border-radius:4px; margin-top:4px;">
+                    <option value="Right-arm fast">Right-arm fast</option>
+                    <option value="Right-arm medium-fast">Right-arm medium-fast</option>
+                    <option value="Left-arm fast">Left-arm fast</option>
+                    <option value="Left-arm medium">Left-arm medium</option>
+                    <option value="Right-arm offbreak">Off Spin (Right)</option>
+                    <option value="Right-arm legbreak">Leg Spin (Right)</option>
+                    <option value="Left-arm orthodox">Left-arm orthodox</option>
+                    <option value="Left-arm wrist-spin">Left-arm wrist-spin</option>
+                    <option value="Mystery Spin">Mystery Spin</option>
+                </select>
+            </div>
+            
+            <div style="margin-bottom:15px;">
+                <label style="color:#9ca3af; font-size:11px; display:flex; justify-content:space-between;">
+                    <span>Avg Speed:</span>
+                    <span id="id-speed-val">135 kph</span>
+                </label>
+                <input type="range" id="id-speed" min="70" max="155" value="135" style="width:100%; accent-color:#3b82f6;">
+            </div>
+            
+            <button id="id-submit-btn" style="width:100%; background:#3b82f6; color:#fff; border:none; padding:8px; border-radius:4px; font-weight:bold; cursor:pointer;">Save to Database</button>
+            <button id="id-close-btn" style="width:100%; background:transparent; color:#9ca3af; border:1px solid #4b5563; padding:6px; border-radius:4px; margin-top:6px; cursor:pointer; font-size:11px;">Dismiss</button>
         </div>
 
         <!-- Floating Chat Button (Temporarily Disabled) -->
@@ -476,7 +508,6 @@ function injectSidebar() {
     // Tactical Overrides listeners
     window.currentDewPct = 30;
     window.currentBowlingAngle = "Over the wicket";
-    window.currentBowlingStyleOverride = "Auto-Detect";
     
     document.getElementById('dew-slider').addEventListener('input', (e) => {
         window.currentDewPct = parseInt(e.target.value);
@@ -487,8 +518,41 @@ function injectSidebar() {
         window.currentBowlingAngle = e.target.value;
     });
     
-    document.getElementById('style-override').addEventListener('change', (e) => {
-        window.currentBowlingStyleOverride = e.target.value;
+    // Identify Modal Listeners
+    document.getElementById('id-speed').addEventListener('input', (e) => {
+        document.getElementById('id-speed-val').textContent = e.target.value + ' kph';
+    });
+    
+    document.getElementById('id-close-btn').addEventListener('click', () => {
+        document.getElementById('cric-identify-modal').style.display = 'none';
+        window.identifiedPlayersPrompted[document.getElementById('identify-player-name').innerText] = true;
+    });
+    
+    document.getElementById('id-submit-btn').addEventListener('click', async () => {
+        const playerName = document.getElementById('identify-player-name').innerText;
+        const isSpin = document.getElementById('id-type').value === 'spin';
+        const styleStr = document.getElementById('id-style').value;
+        const avgPace = parseFloat(document.getElementById('id-speed').value);
+        
+        document.getElementById('id-submit-btn').innerText = "Saving...";
+        try {
+            await fetch("http://127.0.0.1:8000/api/players/custom", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    player_name: playerName,
+                    is_spin: isSpin,
+                    bowling_style_str: styleStr,
+                    avg_pace: avgPace
+                })
+            });
+            window.identifiedPlayersPrompted[playerName] = true;
+            document.getElementById('cric-identify-modal').style.display = 'none';
+            document.getElementById('id-submit-btn').innerText = "Save to Database";
+        } catch (e) {
+            console.error("Failed to save player", e);
+            document.getElementById('id-submit-btn').innerText = "Failed";
+        }
     });
 
 
@@ -524,6 +588,12 @@ function injectSidebar() {
                 if (!res.ok) {
                     console.error("API Error", data);
                     return;
+                }
+                
+                // Show Identify Modal for Unknown Bowlers
+                if (data.is_unknown_bowler && !window.identifiedPlayersPrompted[context.bowler]) {
+                    document.getElementById('identify-player-name').innerText = context.bowler;
+                    document.getElementById('cric-identify-modal').style.display = 'block';
                 }
                 
                 document.getElementById('ai-results').classList.remove('cric-ai-hidden');

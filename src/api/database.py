@@ -42,6 +42,15 @@ class OverHistory(Base):
     over_prefix = Column(String, unique=True, index=True)
     balls_json = Column(Text) # Store list of ball coordinates as JSON string
 
+class CustomPlayerProfile(Base):
+    __tablename__ = "custom_player_profiles"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    player_name = Column(String, unique=True, index=True)
+    is_spin = Column(Boolean, default=False)
+    bowling_style_str = Column(String, default="Unknown")
+    avg_pace = Column(Float, default=135.0)
+
 # Dependency to get DB session
 def get_db():
     db = SessionLocal()
