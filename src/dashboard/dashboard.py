@@ -1073,40 +1073,37 @@ elif page == "Pitch Intelligence & Toss Analyzer":
             
             st.info(f"**Optimal Bowling Blueprint:** {data['optimal_bowling_length']}")
             
-            st.markdown("##### 5-Day Pitch Wear Forecast (Markov Chain Heatmap)")
+            st.markdown("##### Spatio-Temporal Markovian Pitch Degradation (ST-MPDA)")
+            st.markdown("<span style='font-size:0.85rem; color:rgba(255,255,255,0.7);'>Observe how the topographical surface deteriorates phase-by-phase.</span>", unsafe_allow_html=True)
             
-            # Generate a 3D surface plot representing Pitch Wear
-            heatmap_type = data["wear_heatmap"]
-            x = np.linspace(-1.5, 1.5, 30)
-            y = np.linspace(0, 20.12, 50)
-            X, Y = np.meshgrid(x, y)
-            
-            if heatmap_type == "green_seaming":
-                Z = np.sin(Y) * np.cos(X) * 0.1 # even bounce, small divots
-                colorscale = "Greens"
-            elif heatmap_type == "dusty_spinning":
-                Z = np.sin(Y*2) * np.cos(X*2) * 0.8 # heavy cracks
-                colorscale = "YlOrBr"
-            elif heatmap_type == "damp_sticky":
-                Z = np.sin(Y/2) * np.cos(X/2) * 0.5
-                colorscale = "Blues"
-            else:
-                Z = np.zeros_like(X) # flat
-                colorscale = "Greys"
+            temporal_matrix = data.get("temporal_degradation_matrix", {})
+            if temporal_matrix:
+                phases = list(temporal_matrix.keys())
+                selected_phase = st.radio("Select Match Phase:", phases, horizontal=True)
                 
-            fig = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, colorscale=colorscale)])
-            fig.update_layout(
-                title="Forecasted Surface Degradation", 
-                scene=dict(
-                    xaxis_title='Width (m)', 
-                    yaxis_title='Length (m)', 
-                    zaxis_title='Cracks/Wear (Depth)',
-                    zaxis=dict(range=[-1, 1])
-                ),
-                margin=dict(l=0, r=0, b=0, t=30),
-                height=350
-            )
-            st.plotly_chart(fig, use_container_width=True)
+                phase_data = temporal_matrix[selected_phase]
+                Z_grid = np.array(phase_data["Z_grid"])
+                colorscale = phase_data["colorscale"]
+                
+                x = np.linspace(-1.5, 1.5, 30)
+                y = np.linspace(0, 20.12, 50)
+                X, Y = np.meshgrid(x, y)
+                
+                fig = go.Figure(data=[go.Surface(z=Z_grid, x=X, y=Y, colorscale=colorscale)])
+                fig.update_layout(
+                    title=f"Forecasted Surface: {selected_phase}", 
+                    scene=dict(
+                        xaxis_title='Width (m)', 
+                        yaxis_title='Length (m)', 
+                        zaxis_title='Cracks/Wear (Depth)',
+                        zaxis=dict(range=[-1.2, 1.2])
+                    ),
+                    margin=dict(l=0, r=0, b=0, t=30),
+                    height=400
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("ST-MPDA temporal matrix missing. Please re-generate.")
             
         else:
             st.info("Awaiting input...")

@@ -94,6 +94,50 @@ class PitchIntelligenceEngine:
             }
         }
         
+        # 4. Spatio-Temporal Markovian Pitch Degradation Algorithm (ST-MPDA)
+        import numpy as np
+        x = np.linspace(-1.5, 1.5, 30)
+        y = np.linspace(0, 20.12, 50)
+        X, Y = np.meshgrid(x, y)
+        
+        phases = {}
+        if match_format == "T20":
+            phase_keys = ["Overs 1-6 (Powerplay)", "Overs 7-15 (Middle)", "Overs 16-20 (Death)"]
+            wear_multipliers = [0.2, 0.6, 1.0]
+        elif match_format == "ODI":
+            phase_keys = ["Overs 1-10", "Overs 11-25", "Overs 26-40", "Overs 41-50"]
+            wear_multipliers = [0.1, 0.4, 0.7, 1.0]
+        else:
+            phase_keys = ["Day 1 (Fresh)", "Day 2 (Settling)", "Day 3 (Wear Begins)", "Day 4 (Cracks Open)", "Day 5 (Dustbowl)"]
+            wear_multipliers = [0.0, 0.25, 0.5, 0.8, 1.2]
+            
+        temporal_degradation_matrix = {}
+        
+        for i, p_key in enumerate(phase_keys):
+            mult = wear_multipliers[i]
+            
+            if wear_heatmap_type == "green_seaming":
+                # Grass wears off slightly, minor divots
+                Z = np.sin(Y) * np.cos(X) * (0.1 + mult * 0.15)
+                colorscale = "Greens"
+            elif wear_heatmap_type == "dusty_spinning":
+                # Cracks open up drastically over time
+                Z = np.sin(Y*2) * np.cos(X*2) * (0.2 + mult * 0.8)
+                colorscale = "YlOrBr"
+            elif wear_heatmap_type == "damp_sticky":
+                # Dries up and forms uneven ridges
+                Z = np.sin(Y/2) * np.cos(X/2) * (0.5 - mult * 0.2)
+                colorscale = "Blues"
+            else:
+                # Flat belter stays mostly flat but gets scuffed
+                Z = (np.sin(Y*3) * np.cos(X*3)) * (mult * 0.1)
+                colorscale = "Greys"
+                
+            temporal_degradation_matrix[p_key] = {
+                "Z_grid": Z.tolist(),
+                "colorscale": colorscale
+            }
+        
         return {
             "status": "success",
             "detected_nature": pitch_type.title() if pitch_type else "Standard",
@@ -101,7 +145,7 @@ class PitchIntelligenceEngine:
             "toss_decision": toss_decision,
             "game_theory_matrix": matrix,
             "optimal_bowling_length": optimal_length,
-            "wear_heatmap": wear_heatmap_type
+            "temporal_degradation_matrix": temporal_degradation_matrix
         }
 
 pitch_engine = PitchIntelligenceEngine()
