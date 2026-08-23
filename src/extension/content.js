@@ -48,8 +48,8 @@ async function extractDeepMatchContext() {
             // 2. Ultra-robust Scrape of live commentary for Next Ball Prediction context
             // We search the entire raw text of the page for the first line that looks like "19.5 Bowler to Batter, result"
             const allTextLines = document.body.innerText || "";
-            // Regex matches: over number (0.1 to 49.6 or 50.0) -> space -> Commentary Text
-            const commMatch = allTextLines.match(/(?:^|\n)\s*([0-4]?\d\.[1-6]|50\.0)\s+([A-Z][^\n]+)/);
+            // Regex matches: over number (0.1 to 999.6) -> space -> Commentary Text
+            const commMatch = allTextLines.match(/(?:^|\n)\s*(\d{1,3}\.[1-6])\s+([A-Z][^\n]+)/);
             if (commMatch) {
                 context.last_over_string = commMatch[1].trim();
                 context.last_commentary = commMatch[2].trim();
