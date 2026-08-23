@@ -105,8 +105,7 @@ function injectSidebar() {
         <div class="cric-ai-header">
             <span style="font-size:18px; font-weight:900; letter-spacing:0.5px; color:#fff;">LIVE BROADCAST COMPANION</span>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                <span style="background:#22c55e; color:#000; padding:4px 8px; border-radius:4px; font-size:10px; font-weight:900;">🧠 Model: v2.0 (Historical Data)</span>
-                <button id="btn-vision" style="background:#8b5cf6; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">👁️ ENABLE VISION</button>
+                <button id="btn-vision" style="background:#8b5cf6; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">ENABLE VISION</button>
                 <button id="test-end-match" style="background:#f43f5e; color:#fff; border:none; padding:4px 8px; border-radius:4px; font-size:10px; cursor:pointer; font-weight:700;">TEST POST-MATCH</button>
                 <span id="cric-ai-close" style="cursor:pointer; font-size:20px; opacity:0.7; transition: 0.2s;">&times;</span>
             </div>
