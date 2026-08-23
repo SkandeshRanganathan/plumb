@@ -369,10 +369,16 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
         exp = f"{situation}Taskin has established a hard length. Markov probability indicates an 85% chance of repeating this highly effective stock ball."
         next_anim.update({"pitch_x": 50, "pitch_y": 40, "end_x": 50, "end_y": 70})
     elif "four" in text or "six" in text:
-        pred_type = "Wide Yorker / Slower Ball"
-        conf = "78%"
-        exp = f"{situation}Batter scored heavily. Markov transition matrix predicts a shift to a defensive variation (Wide Yorker or slower ball)."
-        next_anim.update({"pitch_x": 25, "pitch_y": 80, "end_x": 20, "end_y": 95})
+        if is_spin:
+            pred_type = "Flatter / Darted In"
+            conf = "80%"
+            exp = f"{situation}Batter scored heavily. Markov transition matrix predicts the spinner will fire it in flatter to restrict scoring."
+            next_anim.update({"pitch_x": 50, "pitch_y": 70, "end_x": 50, "end_y": 80})
+        else:
+            pred_type = "Wide Yorker / Slower Ball"
+            conf = "78%"
+            exp = f"{situation}Batter scored heavily. Markov transition matrix predicts a shift to a defensive variation (Wide Yorker or slower ball)."
+            next_anim.update({"pitch_x": 25, "pitch_y": 80, "end_x": 20, "end_y": 95})
     elif "no run" in text or "dot" in text or "shoulders arms" in text:
         pred_type = "Full & Straight (Stump-to-stump)"
         conf = "82%"

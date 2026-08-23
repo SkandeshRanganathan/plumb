@@ -95,7 +95,8 @@ async function extractDeepMatchContext() {
                 // Find a link that contains the bowler's last name or first name
                 const bowlerParts = context.bowler.split(" ");
                 const lastName = bowlerParts[bowlerParts.length - 1];
-                const profileLink = links.find(a => a.innerText.includes(lastName) || a.innerText.includes(context.bowler));
+                const firstName = bowlerParts[0];
+                const profileLink = links.find(a => a.innerText.includes(lastName) || a.innerText.includes(firstName) || a.innerText.includes(context.bowler));
                 
                 if (profileLink) {
                     console.log(`Cricket AI: Fetching profile for ${context.bowler} from ${profileLink.href}`);
