@@ -144,6 +144,72 @@ def analyze_pitch_conditions(req: PitchAnalysisRequest):
     )
     return result
 
+class SyncLiveRequest(BaseModel):
+    match_id: str
+    series_id: str
+
+@app.post("/sync_live_match")
+def sync_live_match(req: SyncLiveRequest, request: Request, db: Session = Depends(get_db)):
+    """Autonomous live match synchronizer using ESPNCricinfo"""
+    from espncricinfo.match import Match
+    from espncricinfo.player import Player
+    try:
+        match = Match(req.match_id, req.series_id)
+        
+        # Get live context
+        current_innings = match.innings[-1] if match.innings else None
+        if not current_innings:
+            return {"status": "error", "message": "Match has not started or no innings data"}
+            
+        batters = current_innings.get('inningBatsmen', [])
+        bowlers = current_innings.get('inningBowlers', [])
+        
+        # Find the active striker
+        striker = None
+        for b in batters:
+            if not b.get('battedType'): # Not out / active
+                striker = b
+                break
+                
+        # Find the current bowler
+        current_bowler = bowlers[-1] if bowlers else None
+        
+        # Get last commentary event (if available) - Fallback to simple status
+        status_text = match.description
+        
+        striker_name = striker['player']['longName'] if striker else "Unknown Batter"
+        bowler_name = current_bowler['player']['longName'] if current_bowler else "Unknown Bowler"
+        
+        # We can dynamically get player stats here using Player(id) in the future,
+        # For now, pass the names directly to predict_next_ball logic.
+        
+        # Construct the context
+        ctx = DeliveryContext(
+            bowler=bowler_name,
+            batter=striker_name,
+            last_commentary=f"{status_text} | Current Score: {current_innings.get('runs')}/{current_innings.get('wickets')}",
+            last_over_string=str(current_innings.get('overs', 0)),
+            pressure_index=65
+        )
+        
+        # Feed into our AI
+        ai_response = predict_next_ball(request, ctx, db)
+        
+        return {
+            "status": "success",
+            "source": "ESPN_SYNC",
+            "context": {
+                "bowler": bowler_name,
+                "batter": striker_name,
+                "score": f"{current_innings.get('runs')}/{current_innings.get('wickets')}",
+                "overs": str(current_innings.get('overs', 0))
+            },
+            "prediction": ai_response
+        }
+    except Exception as e:
+        print(f"ESPN Sync Error: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.post("/analyze_frame")
 def analyze_frame(frame: FrameData):
     """Computer Vision endpoint to analyze live broadcast video stream."""
