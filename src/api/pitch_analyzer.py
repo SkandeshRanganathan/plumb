@@ -100,6 +100,29 @@ class PitchIntelligenceEngine:
         y = np.linspace(0, 20.12, 50)
         X, Y = np.meshgrid(x, y)
         
+        # --- ML Dataset Integration: Venue Historical Pitch Wear ---
+        import csv, os
+        ml_wear_override = None
+        ml_venue_matched = "None"
+        csv_path = os.path.join(os.path.dirname(__file__), 'historical_training_data.csv')
+        if os.path.exists(csv_path):
+            try:
+                with open(csv_path, 'r', encoding='utf-8') as f:
+                    reader = csv.DictReader(f)
+                    wear_sum = 0.0
+                    match_count = 0
+                    for row in reader:
+                        venue = row['venue_name'].lower()
+                        if venue in pitch_report or venue in pitch_type:
+                            wear_sum += float(row['pitch_wear'])
+                            match_count += 1
+                            ml_venue_matched = row['venue_name']
+                    if match_count > 0:
+                        ml_wear_override = wear_sum / match_count
+            except Exception as e:
+                print("ST-MPDA Dataset Error:", e)
+        # -----------------------------------------------------------
+        
         phases = {}
         if match_format == "T20":
             phase_keys = ["Overs 1-6 (Powerplay)", "Overs 7-15 (Middle)", "Overs 16-20 (Death)"]
@@ -110,6 +133,12 @@ class PitchIntelligenceEngine:
         else:
             phase_keys = ["Day 1 (Fresh)", "Day 2 (Settling)", "Day 3 (Wear Begins)", "Day 4 (Cracks Open)", "Day 5 (Dustbowl)"]
             wear_multipliers = [0.0, 0.25, 0.5, 0.8, 1.2]
+            
+        # Apply ML Override to the wear multipliers
+        if ml_wear_override is not None:
+            # Shift the base wear multiplier heavily based on historical data
+            wear_multipliers = [m * (1.0 + ml_wear_override) for m in wear_multipliers]
+            par_score -= (ml_wear_override * 40) # Higher wear = lower par score
             
         temporal_degradation_matrix = {}
         
@@ -138,6 +167,8 @@ class PitchIntelligenceEngine:
                 "colorscale": colorscale
             }
         
+        par_range = f"{int(par_score - (par_score*0.05))} - {int(par_score + (par_score*0.05))}"
+        
         return {
             "status": "success",
             "detected_nature": pitch_type.title() if pitch_type else "Standard",
@@ -145,7 +176,8 @@ class PitchIntelligenceEngine:
             "toss_decision": toss_decision,
             "game_theory_matrix": matrix,
             "optimal_bowling_length": optimal_length,
-            "temporal_degradation_matrix": temporal_degradation_matrix
+            "temporal_degradation_matrix": temporal_degradation_matrix,
+            "ml_venue_override": ml_venue_matched if ml_wear_override else "None"
         }
 
 pitch_engine = PitchIntelligenceEngine()

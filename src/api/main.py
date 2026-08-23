@@ -220,9 +220,10 @@ def predict_next_ball(request: Request, delivery: DeliveryContext, db: Session =
     else:
         unique_comment += "On the stumps. "
         
+    import re
     if "four" in text or "six" in text:
         unique_comment += "Batter punished the delivery!"
-    elif "out" in text or "caught" in text or "bowled" in text or "lbw" in text:
+    elif re.search(r'\b(out|caught|bowled|lbw)\b', text):
         unique_comment += "Huge wicket for the bowling side!"
     elif "no run" in text or "dot" in text:
         if "leave" in text or "shoulders arms" in text:
