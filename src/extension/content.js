@@ -340,7 +340,7 @@ function injectSidebar() {
         </div>
         
         <!-- Identify Player Modal -->
-        <div id="cric-identify-modal" style="display:none; position:absolute; top:30%; right:340px; width:300px; background:#111827; border:1px solid #374151; border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.8); z-index:9999; padding:15px;">
+        <div id="cric-identify-modal" style="display:none; position:absolute; top:150px; left:20px; width:380px; background:#111827; border:1px solid #3b82f6; border-radius:8px; box-shadow:0 10px 40px rgba(0,0,0,0.9); z-index:999999; padding:20px; box-sizing:border-box;">
             <div style="color:#f59e0b; font-weight:bold; font-size:14px; margin-bottom:10px;">Identify Unknown Player</div>
             <div style="color:#d1d5db; font-size:12px; margin-bottom:15px;">
                 Cricbuzz profile missing for <strong id="identify-player-name" style="color:#fff;">--</strong>. Please identify them:

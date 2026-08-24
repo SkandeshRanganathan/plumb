@@ -11,7 +11,7 @@ from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from src.api.database import Base, engine, get_db, BowlerState, OverHistory
+from src.api.database import Base, engine, get_db, BowlerState, OverHistory, CustomPlayerProfile
 
 # Rate limiting
 from slowapi import Limiter, _rate_limit_exceeded_handler
