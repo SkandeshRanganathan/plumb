@@ -96,3 +96,38 @@ python run_pipeline.py --dashboard        # Launch Streamlit SHAP dashboard
    - Open a live cricket match on Cricbuzz.
    - Click the **ENABLE VISION** button on the overlay.
    - The AI will evaluate pitch conditions, calculate Par Scores, and predict the exact pace, angle, and delivery type of the *next ball*!
+
+
+# Analytics & Business Intelligence
+
+A comprehensive **Data Analytics & Business Intelligence (BI)** layer has been added to PLUMB to translate raw physics and ML outputs into actionable insights.
+
+## Architecture
+- **Transformation (Python/Pandas)**: The massive master_dataset.parquet is sliced into an optimized **Star Schema** (act_deliveries, dim_bowler, dim_match, etc.) located in data/bi/.
+- **Execution Engine (DuckDB)**: Advanced analytical SQL queries (CTEs, Window Functions, Ranking) execute directly against the Parquet files via DuckDB (src/bi/execute_sql.py) without requiring a heavy Postgres server.
+- **Presentation (Power BI)**: A professional, interactive Power BI dashboard utilizing complex **DAX Measures** connects directly to the Parquet schema.
+
+## Generating the BI Data
+`ash
+# Generate the optimized Star Schema Parquet files
+python src/bi/transformations.py
+
+# Execute advanced SQL analytics engine
+python src/bi/execute_sql.py
+`
+
+## Power BI Integration
+To view the analytics dashboard, open Power BI Desktop, import the Parquet files from data/bi/, establish the 1-to-many Star Schema relationships in the Model View, and implement the DAX measures outlined in powerbi/dax_measures.md.
+
+For a full breakdown of the analytical metrics and table structures, please refer to the docs/BI_DATA_DICTIONARY.md.
+
+
+## Power BI Dashboard Showcase
+
+Below are previews of the dynamic Business Intelligence dashboard built on top of the physics and ML data, demonstrating complete Data Analytics capabilities.
+
+### Overview Dashboard
+![Overview Dashboard](assets/dashboard_overview.png)
+
+### Bowler Intelligence Deep-Dive (Bhuvneshwar Kumar)
+![Bowler Intelligence Scatter Plot](assets/dashboard_bowler.png)
