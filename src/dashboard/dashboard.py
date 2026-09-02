@@ -411,6 +411,7 @@ with st.sidebar:
         "Experiment Results",
         "Ablation Study",
         "Anomaly Explorer",
+        "Business Intelligence",
         "About / Research",
     ])
 
@@ -1364,6 +1365,74 @@ elif page == "Anomaly Explorer":
 # ═══════════════════════════════════════════════════════════════════════════════
 #  PAGE 7: About
 # ═══════════════════════════════════════════════════════════════════════════════
+
+
+# ── PAGE: Business Intelligence ───────────────────────────────────────────────
+
+elif page == "Business Intelligence":
+    st.markdown("### Business Intelligence")
+    st.markdown("Interactive analytics powered by the Data Mart Parquet files (Star Schema)")
+    
+    # Load BI Data
+    bi_dir = ROOT / "data" / "bi"
+    if not (bi_dir / "fact_deliveries.parquet").exists():
+        st.warning("BI Data Mart not found. Please run `src/bi/transformations.py` to generate the Star Schema.")
+        st.stop()
+        
+    @st.cache_data
+    def load_bi_data():
+        fact = pd.read_parquet(bi_dir / "fact_deliveries.parquet")
+        dim_b = pd.read_parquet(bi_dir / "dim_bowler.parquet")
+        dim_m = pd.read_parquet(bi_dir / "dim_match.parquet")
+        fact_a = pd.read_parquet(bi_dir / "fact_anomalies.parquet")
+        return fact, dim_b, dim_m, fact_a
+        
+    fact_deliveries, dim_bowler, dim_match, fact_anomalies = load_bi_data()
+    
+    # KPIs
+    st.markdown("#### Executive Overview")
+    col1, col2, col3, col4 = st.columns(4)
+    
+    # Use standard Streamlit metrics to blend perfectly with the app
+    col1.metric("Total Deliveries", f"{len(fact_deliveries):,}")
+    col2.metric("Avg Speed (kph)", f"{fact_deliveries['ball_speed_kmh'].mean():.1f}")
+    col3.metric("Avg Lateral Swing (m)", f"{fact_deliveries['lateral_swing'].mean():.3f}")
+    col4.metric("Anomalies Detected", f"{len(fact_anomalies):,}")
+        
+    st.markdown("---")
+    
+    # Venue Bar Chart
+    st.markdown("#### Venue Swing Analysis")
+    df_venue = pd.merge(fact_deliveries, dim_match, on="match_id", how="inner")
+    df_venue["venue"] = df_venue["venue"].fillna("Unknown Stadium")
+    venue_swing = df_venue.groupby("venue")["lateral_swing"].mean().reset_index().sort_values(by="lateral_swing", ascending=False).dropna()
+    fig_bar = px.bar(venue_swing, x="lateral_swing", y="venue", orientation="h", title="Average Lateral Swing by Venue (meters)",
+                     color="lateral_swing", color_continuous_scale="Blues")
+    fig_bar.update_layout(height=400, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    st.plotly_chart(fig_bar, use_container_width=True)
+    
+    st.markdown("---")
+    
+    # Bowler Intelligence Deep Dive
+    st.markdown("#### Bowler Intelligence Deep-Dive")
+    bowler_list = sorted(dim_bowler['bowler'].dropna().unique())
+    selected_bowler = st.selectbox("Select Bowler", options=bowler_list, index=bowler_list.index("Bhuvneshwar Kumar") if "Bhuvneshwar Kumar" in bowler_list else 0)
+    
+    # Filter data for selected bowler
+    bowler_id = dim_bowler[dim_bowler['bowler'] == selected_bowler]['bowler_id'].values[0]
+    bowler_data = fact_deliveries[fact_deliveries['bowler_id'] == bowler_id].dropna(subset=['ball_speed_kmh', 'lateral_swing'])
+    
+    if len(bowler_data) > 0:
+        fig_scatter = px.scatter(bowler_data, x="ball_speed_kmh", y="lateral_swing", 
+                                 title=f"Physics Footprint: {selected_bowler} ({len(bowler_data):,} deliveries)",
+                                 labels={"ball_speed_kmh": "Speed (km/h)", "lateral_swing": "Lateral Swing (m)"})
+        fig_scatter.update_traces(marker=dict(color="#00d4ff", size=6, opacity=0.7))
+        fig_scatter.update_layout(height=500, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        
+        st.plotly_chart(fig_scatter, use_container_width=True)
+    else:
+        st.info("No physics data available for this bowler.")
+
 
 elif page == "About / Research":
     st.markdown("### Research Overview")
