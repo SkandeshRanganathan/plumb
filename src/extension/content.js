@@ -202,6 +202,11 @@ function injectSidebar() {
                 </div>
             </div>
 
+            <div class="cric-ai-card" id="matchup-visuals-card" style="display:none; padding:10px;">
+                <div class="cric-ai-title-sm" style="margin-bottom:8px; color: #a78bfa;">LIVE MATCHUP ANALYTICS</div>
+                <div id="matchup-visuals-content" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+
             <div id="ai-results" class="cric-ai-hidden">
                 <!-- Evaluation Block -->
                 <div id="eval-card" class="cric-eval-card cric-ai-hidden">
@@ -578,6 +583,27 @@ function injectSidebar() {
             }
             
             try {
+                // Fetch Matchup Visuals (Wagon Wheel, Beehive, Weak Zones)
+                try {
+                    const vizRes = await fetch(`http://localhost:8000/api/matchup_visuals?batter=${encodeURIComponent(currentCtx.batter)}&bowler=${encodeURIComponent(currentCtx.bowler)}`);
+                    const vizHtml = await vizRes.text();
+                    if (!vizHtml.includes("Insufficient physics data")) {
+                        document.getElementById('matchup-visuals-content').innerHTML = vizHtml;
+                        document.getElementById('matchup-visuals-card').style.display = 'block';
+                        
+                        // Execute Plotly scripts if any
+                        const scripts = document.getElementById('matchup-visuals-content').getElementsByTagName('script');
+                        for(let i=0; i<scripts.length; i++) {
+                            eval(scripts[i].innerText);
+                        }
+                    } else {
+                        document.getElementById('matchup-visuals-content').innerHTML = `<div style="color:#d1d5db; font-size:12px; font-style:italic;">No historical physics data available in our database for ${currentCtx.batter} vs ${currentCtx.bowler}.</div>`;
+                        document.getElementById('matchup-visuals-card').style.display = 'block';
+                    }
+                } catch(e) {
+                    console.error("Failed to fetch matchup visuals", e);
+                }
+
                 const res = await fetch('http://localhost:8000/predict_next_ball', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

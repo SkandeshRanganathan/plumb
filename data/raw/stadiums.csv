@@ -1,0 +1,57 @@
+stadium_id,stadium_name,city,country,latitude,longitude,capacity,pitch_type,pitch_nature,average_1st_innings_score,average_2nd_innings_score,pace_assistance,spin_assistance,bounce,seam_movement,dew_factor,average_boundary_size_m,outfield_speed,toss_advantage,day_night,weather_type,average_temperature_c,average_humidity_pct,average_wind_speed_kmh,rain_risk,home_team
+ST001,Narendra Modi Stadium,Ahmedabad,India,23.0916,72.597,132000,Balanced,Hard/true,170,158,Medium,Low,High,Low,Medium,67,Fast,Chasing,Yes,Hot & Dry,28,55,12,High,Gujarat Titans
+ST002,M. Chinnaswamy Stadium,Bengaluru,India,12.9788,77.5996,40000,Batting Friendly,Flat,178,168,Low,Medium,Medium,Low,High,65,Fast,Chasing,Yes,Warm & Semi-Humid,24,65,12,Medium,Royal Challengers Bengaluru
+ST003,Wankhede Stadium,Mumbai,India,18.9389,72.8258,33000,Batting Friendly,Hard/true,180,170,Medium,Low,High,Low,High,66,Fast,Chasing,Yes,Hot & Humid,28,75,15,High,Mumbai Indians
+ST004,Eden Gardens,Kolkata,India,22.5646,88.3433,68000,Batting Friendly,Hard/true,175,164,Medium,Medium,Medium,Low,High,67,Fast,Chasing,Yes,Hot & Humid,27,72,10,High,Kolkata Knight Riders
+ST005,M. A. Chidambaram Stadium,Chennai,India,13.0627,80.2792,38000,Spin Friendly,Dry/slow,165,154,Low,High,Medium,Low,High,65,Medium,Chasing,Yes,Hot & Humid,29,72,15,High,Chennai Super Kings
+ST006,Arun Jaitley Stadium,Delhi,India,28.6377,77.2433,35000,Balanced,Dry/variable,170,158,Medium,Medium,Medium,Low,Medium,64,Medium,Chasing,Yes,Hot & Dry,25,55,10,Medium,Delhi Capitals
+ST007,Rajiv Gandhi International Cricket Stadium,Hyderabad,India,17.4065,78.5505,39000,Batting Friendly,Hard/true,175,165,Medium,Low,High,Low,Medium,67,Fast,Chasing,Yes,Hot & Dry,27,60,12,Medium,Sunrisers Hyderabad
+ST008,Punjab Cricket Association IS Bindra Stadium,Mohali,India,30.69,76.738,27000,Pace Friendly,Hard/true,170,157,High,Low,High,Medium,Low,68,Fast,Batting First,Yes,Hot & Semi-Dry,23,60,10,Medium,Punjab Kings
+ST009,Sawai Mansingh Stadium,Jaipur,India,26.8969,75.8031,30000,Balanced,Hard/true,171,158,Medium,Low,Medium,Low,Medium,67,Fast,Chasing,Yes,Hot & Dry,26,50,13,Low,Rajasthan Royals
+ST010,Bharat Ratna Shri Atal Bihari Vajpayee Ekana Cricket Stadium,Lucknow,India,26.8124,80.902,50000,Spin Friendly,Slow/low,160,150,Low,High,Low,Low,Medium,68,Medium,Batting First,Yes,Hot & Semi-Dry,26,60,8,Medium,Lucknow Super Giants
+ST011,Himachal Pradesh Cricket Association Stadium,Dharamsala,India,32.197,76.325,23000,Pace Friendly,Seaming,165,153,High,Low,High,High,Low,65,Fast,Batting First,Yes,Cool & Mountain,18,65,12,Medium,Himachal Pradesh
+ST012,M. P. Shahid Veer Narayan Singh International Cricket Stadium,Raipur,India,21.2514,81.6296,65000,Balanced,Hard/true,165,155,Medium,Medium,Medium,Low,Medium,68,Fast,Chasing,Yes,Warm & Semi-Dry,26,65,9,Medium,Chhattisgarh
+ST013,Barsapara Cricket Stadium,Guwahati,India,26.1445,91.7362,40000,Batting Friendly,Hard/true,170,160,Medium,Low,High,Low,High,68,Fast,Chasing,Yes,Hot & Humid,25,75,8,High,Assam
+ST014,Greenfield International Stadium,Thiruvananthapuram,India,8.523,76.88,50000,Balanced,Hard/true,165,155,Medium,Medium,Medium,Low,High,68,Fast,Chasing,Yes,Hot & Humid,27,78,12,High,Kerala
+ST015,Vidarbha Cricket Association Stadium,Nagpur,India,21.089,79.053,45000,Balanced,Hard/true,170,158,Medium,Medium,High,Low,Low,68,Fast,Chasing,Yes,Hot & Dry,27,50,10,Low,Vidarbha
+ST016,Barabati Stadium,Cuttack,India,20.4625,85.883,45000,Balanced,Hard/true,165,155,Medium,Medium,Medium,Low,High,67,Fast,Chasing,Yes,Hot & Humid,27,75,12,High,Odisha
+ST017,Maharashtra Cricket Association Stadium,Pune,India,18.6766,73.708,37000,Batting Friendly,Hard/true,173,161,Medium,Medium,High,Low,Medium,68,Fast,Chasing,Yes,Warm & Semi-Dry,25,55,12,Medium,Maharashtra
+ST018,Sardar Patel Stadium,Ahmedabad,India,23.0916,72.597,132000,Balanced,Hard/true,170,158,Medium,Low,High,Low,Medium,67,Fast,Chasing,Yes,Hot & Dry,28,55,12,High,Gujarat
+ST019,Brabourne Stadium,Mumbai,India,18.9322,72.8258,20000,Batting Friendly,Flat,178,168,Medium,Low,High,Low,High,65,Fast,Chasing,Yes,Hot & Humid,28,75,15,High,Mumbai
+ST020,The Gabba,Brisbane,Australia,-27.4858,153.038,42000,Pace Friendly,Hard/bouncy,165,155,High,Low,High,Medium,Low,68,Fast,Batting First,Yes,Subtropical,23,65,14,Medium,Queensland
+ST021,Melbourne Cricket Ground,Melbourne,Australia,-37.82,144.9834,100024,Pace Friendly,Hard/bouncy,165,154,High,Low,High,Medium,Low,70,Fast,Batting First,Yes,Temperate,16,65,15,Low,Victoria
+ST022,Sydney Cricket Ground,Sydney,Australia,-33.8915,151.2249,48000,Pace Friendly,Hard/true,168,157,High,Low,High,Medium,Low,68,Fast,Batting First,Yes,Temperate/Subtropical,18,65,16,Medium,New South Wales
+ST023,Adelaide Oval,Adelaide,Australia,-34.915,138.596,53583,Batting Friendly,Hard/true,172,160,Medium,Low,High,Low,Low,68,Fast,Batting First,Yes,Mediterranean,19,55,14,Low,South Australia
+ST024,Perth Stadium,Perth,Australia,-31.951,115.889,60000,Pace Friendly,Hard/bouncy,170,157,High,Low,High,Medium,Low,70,Fast,Batting First,Yes,Hot & Dry,19,55,18,Low,Western Australia
+ST025,Lord's,London,England,51.5559,-0.1084,31900,Pace Friendly,Seaming,158,150,High,Low,Medium,High,Low,64,Fast,Batting First,Yes,Cool & Maritime,12,75,14,Medium,Middlesex
+ST026,The Oval,London,England,51.4837,-0.1149,28000,Balanced,Hard/true,165,155,Medium,Low,High,Medium,Low,65,Fast,Batting First,Yes,Cool & Maritime,13,75,14,Medium,Surrey
+ST027,Old Trafford,Manchester,England,53.4631,-2.2913,26000,Pace Friendly,Seaming,160,151,High,Low,Medium,High,Low,65,Medium,Batting First,Yes,Cool & Wet,11,80,15,High,Lancashire
+ST028,Edgbaston,Birmingham,England,52.4559,-1.913,25000,Pace Friendly,Seaming,160,151,High,Low,Medium,High,Low,65,Fast,Batting First,Yes,Cool & Maritime,11,78,13,Medium,Warwickshire
+ST029,Trent Bridge,Nottingham,England,52.9369,-1.1321,17500,Batting Friendly,Hard/true,170,160,Medium,Low,High,Medium,Low,64,Fast,Chasing,Yes,Cool & Maritime,11,77,12,Medium,Nottinghamshire
+ST030,The Rose Bowl,Southampton,England,50.924,-1.322,25000,Pace Friendly,Seaming,160,150,High,Low,Medium,High,Low,66,Fast,Batting First,Yes,Cool & Maritime,13,78,14,Medium,Hampshire
+ST031,Newlands Cricket Ground,Cape Town,South Africa,-33.93,18.411,25000,Pace Friendly,Seaming,165,154,High,Low,High,High,Low,66,Fast,Batting First,Yes,Mediterranean,18,65,15,Low,Western Province
+ST032,Wanderers Stadium,Johannesburg,South Africa,-26.131,28.057,34000,Batting Friendly,Hard/bouncy,175,162,High,Low,High,Medium,Low,68,Fast,Batting First,Yes,Highland,18,55,14,Low,Highveld Lions
+ST033,Kingsmead,Durban,South Africa,-29.95,30.998,25000,Pace Friendly,Seaming,160,151,High,Low,Medium,High,Medium,65,Medium,Batting First,Yes,Subtropical Humid,21,75,15,High,KwaZulu-Natal
+ST034,Gaddafi Stadium,Lahore,Pakistan,31.5204,74.3587,27000,Batting Friendly,Flat,180,168,Medium,Low,High,Low,Medium,67,Fast,Chasing,Yes,Hot & Dry,25,55,10,Medium,Lahore Qalandars
+ST035,National Stadium,Karachi,Pakistan,24.8934,67.066,34228,Batting Friendly,Flat,175,163,Medium,Low,High,Low,Medium,68,Fast,Chasing,Yes,Hot & Humid,26,65,15,Medium,Karachi Kings
+ST036,Rawalpindi Cricket Stadium,Rawalpindi,Pakistan,33.6518,73.076,15000,Batting Friendly,Flat,175,163,Medium,Low,High,Low,Medium,67,Fast,Chasing,Yes,Hot & Semi-Dry,21,55,10,Medium,Islamabad United
+ST037,Shere Bangla National Cricket Stadium,Dhaka,Bangladesh,23.8069,90.3687,25000,Spin Friendly,Slow/low,160,150,Low,High,Medium,Low,High,65,Medium,Chasing,Yes,Hot & Humid,26,75,10,High,Bangladesh
+ST038,Zahur Ahmed Chowdhury Stadium,Chattogram,Bangladesh,22.357,91.783,20000,Spin Friendly,Slow/low,158,149,Low,High,Medium,Low,High,67,Medium,Chasing,Yes,Hot & Humid,27,78,10,High,Bangladesh
+ST039,R. Premadasa Stadium,Colombo,Sri Lanka,6.9036,79.873,35000,Spin Friendly,Slow/low,165,154,Low,High,Medium,Low,High,67,Medium,Chasing,Yes,Tropical Humid,28,78,12,High,Sri Lanka
+ST040,Galle International Stadium,Galle,Sri Lanka,6.026,80.217,35000,Spin Friendly,Dry/turning,155,145,Low,High,Low,Low,High,66,Medium,Batting First,Yes,Tropical Humid,27,80,13,High,Sri Lanka
+ST041,Pallekele International Cricket Stadium,Kandy,Sri Lanka,7.281,80.643,35000,Balanced,Hard/true,165,154,Medium,Medium,High,Low,High,68,Fast,Chasing,Yes,Tropical Highland,24,75,10,High,Sri Lanka
+ST042,Sabina Park,Kingston,Jamaica,18.011,-76.787,15000,Pace Friendly,Hard/bouncy,165,154,High,Low,High,Medium,Medium,67,Fast,Batting First,Yes,Tropical,27,75,16,High,Jamaica
+ST043,Kensington Oval,Bridgetown,Barbados,13.1046,-59.507,28000,Pace Friendly,Hard/bouncy,168,157,High,Low,High,Medium,Medium,68,Fast,Batting First,Yes,Tropical,27,75,19,High,Barbados
+ST044,Providence Stadium,Georgetown,Guyana,6.8013,-58.1551,15000,Spin Friendly,Slow/low,150,142,Low,High,Low,Low,High,67,Medium,Chasing,Yes,Tropical Wet,27,80,15,High,Guyana Amazon Warriors
+ST045,Queen's Park Oval,Port of Spain,Trinidad and Tobago,10.658,-61.517,25000,Balanced,Hard/true,165,154,Medium,Medium,Medium,Low,High,68,Fast,Chasing,Yes,Tropical,27,78,18,High,Trinidad and Tobago
+ST046,Basin Reserve,Wellington,New Zealand,-41.275,174.781,11600,Pace Friendly,Seaming,155,147,High,Low,Medium,High,Low,62,Fast,Batting First,Yes,Cool & Windy,13,75,25,Medium,Wellington
+ST047,Hagley Oval,Christchurch,New Zealand,-43.532,172.607,18600,Pace Friendly,Seaming,160,151,High,Low,Medium,High,Low,64,Fast,Batting First,Yes,Cool & Dry,13,70,18,Medium,Canterbury
+ST048,Eden Park,Auckland,New Zealand,-36.874,174.744,50000,Balanced,Hard/true,165,154,Medium,Low,High,Medium,Low,62,Fast,Chasing,Yes,Temperate Maritime,16,75,18,Medium,Auckland
+ST049,Dubai International Cricket Stadium,Dubai,United Arab Emirates,25.046,55.218,25000,Batting Friendly,Flat/hard,170,160,Low,Medium,High,Low,High,68,Fast,Chasing,Yes,Hot & Arid,28,55,14,Low,United Arab Emirates
+ST050,Sheikh Zayed Cricket Stadium,Abu Dhabi,United Arab Emirates,24.4017,54.639,20000,Balanced,Flat/hard,165,155,Low,Medium,High,Low,High,68,Fast,Chasing,Yes,Hot & Arid,28,55,13,Low,United Arab Emirates
+ST051,National Stadium,Singapore,Singapore,1.3,103.874,6000,Batting Friendly,Flat,170,160,Low,Medium,Medium,Low,High,65,Fast,Chasing,Yes,Tropical Humid,28,80,12,High,Singapore
+ST052,Malahide Cricket Club Ground,Dublin,Ireland,53.452,-6.154,11500,Pace Friendly,Seaming,155,147,High,Low,Medium,High,Low,63,Medium,Batting First,Yes,Cool & Wet,10,80,15,High,Ireland
+ST053,Stormont Cricket Ground,Belfast,Northern Ireland,54.617,-5.868,6000,Pace Friendly,Seaming,150,143,High,Low,Medium,High,Low,62,Medium,Batting First,Yes,Cool & Wet,10,82,16,High,Northern Ireland
+ST054,Bellerive Oval,Hobart,Australia,-42.865,147.308,20000,Pace Friendly,Seaming,158,149,High,Low,Medium,Medium,Low,66,Fast,Batting First,Yes,Cool Maritime,13,65,18,Medium,Tasmania
+ST055,Manuka Oval,Canberra,Australia,-35.319,149.135,13000,Batting Friendly,Hard/true,170,158,Medium,Low,High,Low,Low,66,Fast,Batting First,Yes,Cool Dry,15,55,16,Low,Australian Capital Territory
+ST056,Seddon Park,Hamilton,New Zealand,-37.788,175.279,10000,Pace Friendly,Seaming,160,151,High,Low,Medium,High,Low,64,Fast,Batting First,Yes,Temperate Maritime,15,75,17,Medium,Northern Districts

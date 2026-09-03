@@ -85,7 +85,7 @@ def run_bi_transformations():
         'delivery_id', 'match_id', 'bowler_id', 'batter_id', 
         'over_num', 'ball_in_over', 'ball_speed_kmh', 'pitch_x', 'pitch_y', 
         'stumps_x', 'stumps_y', 'lateral_swing', 'runs', 'extras', 'is_wide', 'is_no_ball',
-        'dismissal_details', 'batter_runs'
+        'dismissal_details', 'batter_runs', 'field_x', 'field_y', 'delivery_type'
     ]
     # Only keep columns that actually exist in the dataframe to prevent errors
     valid_fact_cols = [c for c in fact_cols if c in df.columns]

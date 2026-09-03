@@ -948,3 +948,87 @@ def post_match_analysis(req: PostMatchRequest):
 
 if __name__ == "__main__":
     uvicorn.run("src.api.main:app", host="0.0.0.0", port=8000, reload=True)
+
+
+from fastapi.responses import HTMLResponse
+import pandas as pd
+import plotly.express as px
+from pathlib import Path
+
+# Load BI Data at startup or globally
+BI_DIR = Path("data/bi")
+
+@app.get("/api/matchup_visuals", response_class=HTMLResponse)
+async def get_matchup_visuals(batter: str, bowler: str):
+    try:
+        if not (BI_DIR / "fact_deliveries.parquet").exists():
+            return "<div>BI Data missing on server.</div>"
+            
+        fact_deliveries = pd.read_parquet(BI_DIR / "fact_deliveries.parquet")
+        dim_batter = pd.read_parquet(BI_DIR / "dim_batter.parquet")
+        dim_bowler = pd.read_parquet(BI_DIR / "dim_bowler.parquet")
+        
+        # Fuzzy match batter and bowler
+        matched_b = None
+        for b in dim_batter['batter'].dropna().unique():
+            if batter.lower() in b.lower() or b.lower() in batter.lower():
+                matched_b = b
+                break
+                
+        matched_bw = None
+        for b in dim_bowler['bowler'].dropna().unique():
+            if bowler.lower() in b.lower() or b.lower() in bowler.lower():
+                matched_bw = b
+                break
+                
+        if not matched_b or not matched_bw:
+            return f"<div style='color:gray; font-size:12px;'>Insufficient physics data for {batter} vs {bowler}</div>"
+            
+        b_id = dim_batter[dim_batter['batter'] == matched_b].iloc[0]['batter_id']
+        bw_id = dim_bowler[dim_bowler['bowler'] == matched_bw].iloc[0]['bowler_id']
+        
+        b_data = fact_deliveries[fact_deliveries['batter_id'] == b_id].copy()
+        bw_data = fact_deliveries[fact_deliveries['bowler_id'] == bw_id].copy()
+        h2h = fact_deliveries[(fact_deliveries['batter_id'] == b_id) & (fact_deliveries['bowler_id'] == bw_id)]
+        
+        html_parts = []
+        
+        # Head to Head
+        h2h_runs = int(h2h['batter_runs'].sum()) if len(h2h)>0 else 0
+        h2h_outs = int(h2h['dismissal_details'].notna().sum()) if len(h2h)>0 else 0
+        html_parts.append(f"""
+        <div style="background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: center;">
+            <div style="font-size: 14px; font-weight: bold; color: #00cc66;">H2H: {matched_b} vs {matched_bw}</div>
+            <div style="font-size: 18px;">Runs: <b>{h2h_runs}</b> | Balls: <b>{len(h2h)}</b> | Outs: <b>{h2h_outs}</b></div>
+        </div>
+        """)
+        
+        # Wagon Wheel
+        b_bounds = b_data[b_data['batter_runs'] >= 4].copy()
+        if len(b_bounds) > 0 and 'field_x' in b_bounds.columns and b_bounds['field_x'].notna().sum() > 0:
+            fig_wagon = px.scatter(b_bounds, x='field_x', y='field_y', color='batter_runs', color_continuous_scale=['#00cc66', '#ff00ff'])
+            fig_wagon.add_shape(type="circle", x0=0, y0=0, x1=100, y1=100, line_color="white", opacity=0.3)
+            fig_wagon.update_layout(height=250, width=250, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", title=f"{matched_b} Wagon Wheel")
+            html_parts.append(fig_wagon.to_html(full_html=False, include_plotlyjs='cdn', config={'displayModeBar': False}))
+            
+        # Beehive
+        if len(bw_data) > 0 and 'stumps_x' in bw_data.columns and bw_data['stumps_x'].notna().sum() > 0:
+            fig_bee = px.density_heatmap(bw_data, x='stumps_y', y='stumps_x', nbinsx=15, nbinsy=15, color_continuous_scale="Viridis")
+            fig_bee.update_yaxes(autorange="reversed")
+            fig_bee.update_layout(height=250, width=250, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", title=f"{matched_bw} Strike Zone")
+            html_parts.append(fig_bee.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False}))
+            
+        # Weak Zone
+        b_dismiss = b_data[b_data['dismissal_details'].notna()].copy()
+        if len(b_dismiss) > 3:
+            fig_weak = px.density_contour(b_dismiss, x='pitch_y', y='pitch_x')
+            fig_weak.update_traces(contours_coloring="fill", colorscale="Reds")
+            fig_weak.update_yaxes(autorange="reversed")
+            fig_weak.update_layout(height=250, width=250, margin=dict(l=0, r=0, t=20, b=0), paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", title=f"{matched_b} Weak Zone")
+            html_parts.append(fig_weak.to_html(full_html=False, include_plotlyjs=False, config={'displayModeBar': False}))
+            
+        # Wrap everything
+        final_html = f"<div style='display: flex; flex-direction: column; gap: 10px; align-items: center;'>{''.join(html_parts)}</div>"
+        return final_html
+    except Exception as e:
+        return f"<div>Error generating visuals: {str(e)}</div>"

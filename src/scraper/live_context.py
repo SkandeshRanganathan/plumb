@@ -15,11 +15,22 @@ def get_live_context(url):
         "title": None,
         "description": None,
         "batters": [],
+        "team1": None,
+        "team2": None,
         "success": False
     }
     
     if not url or "cricbuzz.com" not in url:
         return context
+        
+    try:
+        slug = url.split('/')[-1]
+        teams_part = slug.split('-vs-')
+        if len(teams_part) == 2:
+            context["team1"] = teams_part[0].upper()
+            context["team2"] = teams_part[1].split('-')[0].upper()
+    except Exception:
+        pass
         
     try:
         response = requests.get(url, headers=headers, timeout=5)
@@ -52,19 +63,19 @@ def get_live_context(url):
     # ROBUST FALLBACK: Parse the URL string directly if the network request is blocked
     if not context["success"] and "/live-cricket-score" in url:
         try:
-            # e.g. https://www.cricbuzz.com/live-cricket-scorecard/154551/abf-vs-tkr-24th-match-caribbean-premier-league-2026
             slug = url.split('/')[-1]
             if slug:
                 clean_title = slug.replace('-', ' ').title()
                 context["title"] = f"Live Match: {clean_title}"
                 context["description"] = f"Status: Live action for {clean_title}"
                 
-                # Try to extract teams from 'Abf Vs Tkr'
+                # Extract teams
                 teams_part = slug.split('-vs-')
                 if len(teams_part) == 2:
                     team1 = teams_part[0].upper()
                     team2 = teams_part[1].split('-')[0].upper()
-                    context["batters"] = [team1, team2] # Provide teams as batters to trigger the UI update
+                    context["team1"] = team1
+                    context["team2"] = team2
                 
                 context["success"] = True
         except Exception:

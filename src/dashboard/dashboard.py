@@ -406,13 +406,13 @@ with st.sidebar:
     st.markdown("---")
     page = st.selectbox("Navigation", [
         "Live Delivery Analysis",
+        "Data Visualisation",
         "Pitch Intelligence & Toss Analyzer",
         "Dataset Explorer",
         "Bowler Profiles",
         "Experiment Results",
         "Ablation Study",
         "Anomaly Explorer",
-        "Data Visualisation",
         "About / Research",
     ])
 
@@ -1372,7 +1372,7 @@ elif page == "Anomaly Explorer":
 
 elif page == "Data Visualisation":
     st.markdown("### 📊 Data Visualisation")
-    st.markdown("Broadcast-level analytics combining physics data, Kaggle career records, and Howstat dismissal profiles.")
+    st.markdown("Broadcast-level analytics combining physics data, Wikipedia career records, and Howstat dismissal profiles.")
     
     # Load BI Data
     bi_dir = ROOT / "data" / "bi"
@@ -1388,9 +1388,17 @@ elif page == "Data Visualisation":
         dim_w = pd.read_parquet(bi_dir / "dim_weather.parquet")
         dim_bat = pd.read_parquet(bi_dir / "dim_batter.parquet")
         fact_a = pd.read_parquet(bi_dir / "fact_anomalies.parquet")
-        return fact, dim_b, dim_m, dim_w, dim_bat, fact_a
         
-    fact_deliveries, dim_bowler, dim_match, dim_weather, dim_batter, fact_anomalies = load_bi_data()
+        # Load Stadiums dataset
+        stadiums_path = ROOT / "data" / "raw" / "stadiums.csv"
+        if stadiums_path.exists():
+            df_stadiums = pd.read_csv(stadiums_path)
+        else:
+            df_stadiums = pd.DataFrame()
+            
+        return fact, dim_b, dim_m, dim_w, dim_bat, fact_a, df_stadiums
+        
+    fact_deliveries, dim_bowler, dim_match, dim_weather, dim_batter, fact_anomalies, df_stadiums = load_bi_data()
     
     # Live Context Integration
     st.markdown("---")
@@ -1407,7 +1415,110 @@ elif page == "Data Visualisation":
                     live_batters = context["batters"]
                     st.success("✅ Live Data Successfully Scraped")
                     st.markdown(f"**Match:** {context['title']}")
-                    st.markdown(f"**Live Score & Commentary Summary:** {context['description']}")
+                    st.markdown(f"**Status:** {context['description']}")
+                    
+                    # 1. MATCH-LEVEL ANALYTICS
+                    if context.get("team1") and context.get("team2"):
+                        t1 = context["team1"]
+                        t2 = context["team2"]
+                        st.markdown(f"### ⚔️ Match Analytics: {t1} vs {t2}")
+                        st.markdown("#### Live Conditions Simulator")
+                        st.markdown("Select the venue to load real-time pitch conditions for this match:")
+                        
+                        live_stadium = st.selectbox("Select Venue", options=sorted(df_stadiums["stadium_name"].unique()), key="live_stadium")
+                        s_row = df_stadiums[df_stadiums["stadium_name"] == live_stadium].iloc[0]
+                        col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+                        col_m1.metric("Avg 1st Inn Score", int(s_row.get('average_1st_innings_score', 0)))
+                        col_m2.metric("Toss Advantage", str(s_row.get('toss_advantage', 'N/A')))
+                        col_m3.metric("Pitch Type", str(s_row.get('pitch_type', 'N/A')))
+                        col_m4.metric("Pace/Spin Assist", f"{s_row.get('pace_assistance', 'N/A')} / {s_row.get('spin_assistance', 'N/A')}")
+                        st.markdown("---")
+                    
+                    # 2. PLAYER-LEVEL ANALYTICS (Pushed Down)
+                    if live_batters:
+                        st.markdown("### 🏟️ Player Spotlight Visualisations")
+                        st.markdown(f"Dynamically generating insights for active players: **{', '.join(live_batters)}**")
+                        
+                        batter_list = sorted(dim_batter['batter'].dropna().unique())
+                        bowler_list = sorted(dim_bowler['bowler'].dropna().unique())
+                        
+                        # Provide a dropdown to select the current bowler (since scraper might not reliably fetch it)
+                        current_bowler = st.selectbox("Select Current Bowler (Fielding Team)", options=bowler_list, index=0)
+                        
+                        for lb in live_batters:
+                            # Fuzzy match live batter to our DB
+                            matched_batter = None
+                            for b in batter_list:
+                                if b.lower() in lb.lower() or lb.lower() in b.lower():
+                                    matched_batter = b
+                                    break
+                                    
+                            if matched_batter:
+                                st.markdown(f"#### 🏏 Spotlight: {matched_batter} vs {current_bowler}")
+                                b_id = dim_batter[dim_batter['batter'] == matched_batter].iloc[0]['batter_id']
+                                b_data = fact_deliveries[fact_deliveries['batter_id'] == b_id].copy()
+                                
+                                bw_id = dim_bowler[dim_bowler['bowler'] == current_bowler].iloc[0]['bowler_id']
+                                bw_data = fact_deliveries[fact_deliveries['bowler_id'] == bw_id].copy()
+                                
+                                # 1. H2H Matrix
+                                st.markdown("**Head-to-Head Matrix**")
+                                h2h = fact_deliveries[(fact_deliveries['batter_id'] == b_id) & (fact_deliveries['bowler_id'] == bw_id)]
+                                h2h_runs = h2h['batter_runs'].sum() if len(h2h)>0 else 0
+                                h2h_balls = len(h2h)
+                                h2h_outs = h2h['dismissal_details'].notna().sum() if len(h2h)>0 else 0
+                                col_h1, col_h2, col_h3 = st.columns(3)
+                                col_h1.metric("H2H Runs", int(h2h_runs))
+                                col_h2.metric("H2H Balls Faced", h2h_balls)
+                                col_h3.metric("H2H Dismissals", int(h2h_outs))
+                                
+                                col_l1, col_l2 = st.columns(2)
+                                
+                                with col_l1:
+                                    # Wagon Wheel
+                                    st.markdown("**Batter Boundary Wagon Wheel**")
+                                    b_bounds = b_data[b_data['batter_runs'] >= 4].copy()
+                                    if len(b_bounds) > 0 and 'field_x' in b_bounds.columns and b_bounds['field_x'].notna().sum() > 0:
+                                        fig_wagon = px.scatter(b_bounds, x='field_x', y='field_y', color='batter_runs',
+                                                               color_continuous_scale=['#00cc66', '#ff00ff'])
+                                        fig_wagon.add_shape(type="circle", x0=0, y0=0, x1=100, y1=100, line_color="white", opacity=0.3)
+                                        fig_wagon.update_layout(height=350, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,255,0,0.05)",
+                                                                xaxis=dict(showgrid=False, zeroline=False, range=[-5, 105]),
+                                                                yaxis=dict(showgrid=False, zeroline=False, range=[-5, 105]))
+                                        st.plotly_chart(fig_wagon, use_container_width=True)
+                                    else:
+                                        st.info("No field coordinate data for this batter.")
+                                        
+                                    # Bowler Phase Profiler
+                                    st.markdown("**Bowler Phase Profiler (Speed)**")
+                                    if len(bw_data) > 0:
+                                        bw_data['Phase'] = pd.cut(bw_data['over_num'], bins=[0, 6, 15, 20], labels=['Powerplay', 'Middle', 'Death'], right=False)
+                                        phase_avg = bw_data.groupby('Phase')['ball_speed_kmh'].mean().reset_index()
+                                        fig_phase = px.bar(phase_avg, x='Phase', y='ball_speed_kmh', color='Phase')
+                                        fig_phase.update_layout(height=300, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                                        st.plotly_chart(fig_phase, use_container_width=True)
+                                        
+                                with col_l2:
+                                    # Weak Zone Heatmap
+                                    st.markdown("**Batter Dismissal Weak Zone**")
+                                    b_dismiss = b_data[b_data['dismissal_details'].notna()].copy()
+                                    if len(b_dismiss) > 3:
+                                        fig_weak = px.density_contour(b_dismiss, x='pitch_y', y='pitch_x')
+                                        fig_weak.update_traces(contours_coloring="fill", colorscale="Reds")
+                                        fig_weak.update_yaxes(autorange="reversed")
+                                        fig_weak.update_layout(height=350, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                                        st.plotly_chart(fig_weak, use_container_width=True)
+                                    else:
+                                        st.info("Not enough dismissals to plot a density zone.")
+                                        
+                                    # Bowler Beehive
+                                    st.markdown("**Bowler Accuracy Beehive**")
+                                    if len(bw_data) > 0 and 'stumps_x' in bw_data.columns and bw_data['stumps_x'].notna().sum() > 0:
+                                        fig_beehive = px.density_heatmap(bw_data, x='stumps_y', y='stumps_x', nbinsx=20, nbinsy=20, color_continuous_scale="Viridis")
+                                        fig_beehive.update_yaxes(autorange="reversed")
+                                        fig_beehive.update_layout(height=350, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                                        st.plotly_chart(fig_beehive, use_container_width=True)
+                                st.markdown("---")
                 else:
                     st.error("Could not parse match context from URL. (Check URL format)")
             except Exception as e:
@@ -1425,7 +1536,7 @@ elif page == "Data Visualisation":
         default_index = 0
         if live_batters:
             for i, b in enumerate(batter_list):
-                if any(lb in b for lb in live_batters) or any(b in lb for lb in live_batters):
+                if any(lb.lower() in b.lower() for lb in live_batters) or any(b.lower() in lb.lower() for lb in live_batters):
                     default_index = i
                     break
         elif "V Kohli" in batter_list:
@@ -1455,10 +1566,10 @@ elif page == "Data Visualisation":
             fig_pitch.update_layout(height=500, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,255,0,0.05)")
             st.plotly_chart(fig_pitch, use_container_width=True)
             
-            # Kaggle & PDF Stats
+            # Wikipedia & PDF Stats
             st.markdown("#### Career & Dismissal Profile")
             col_a, col_b, col_c, col_d = st.columns(4)
-            col_a.metric("Career Centuries (Kaggle)", int(batter_row.get('career_100s', 0)))
+            col_a.metric("Career Centuries (Wiki)", int(batter_row.get('career_100s', 0)))
             
             bowled_pct = batter_row.get('dismissed_bowled_pct', 0)
             lbw_pct = batter_row.get('dismissed_lbw_pct', 0)
@@ -1490,35 +1601,45 @@ elif page == "Data Visualisation":
             st.plotly_chart(fig_scatter, use_container_width=True)
             
     with tab3:
-        st.markdown("#### Stadium Stats (Conditions & Physics)")
-        # Merge venue and weather
-        df_venue_master = pd.merge(dim_match, dim_weather, on="weather_id", how="inner")
-        # Merge with physics
-        df_venue_physics = pd.merge(fact_deliveries, dim_match, on="match_id", how="inner")
-        
-        df_venue_master["venue"] = df_venue_master["venue"].fillna("Unknown Stadium")
-        df_venue_physics["venue"] = df_venue_physics["venue"].fillna("Unknown Stadium")
-        
-        venue_list = sorted(df_venue_master["venue"].unique())
-        selected_venue = st.selectbox("Select Stadium", options=venue_list, index=0)
-        
-        # Calculate Stats for this venue
-        v_weather = df_venue_master[df_venue_master["venue"] == selected_venue].iloc[0]
-        v_physics = df_venue_physics[df_venue_physics["venue"] == selected_venue]
-        
-        col_v1, col_v2, col_v3, col_v4, col_v5 = st.columns(5)
-        col_v1.metric("Avg Lateral Swing", f"{v_physics['lateral_swing'].mean():.3f} m")
-        col_v2.metric("Avg Spin/Deviation", f"{v_physics['lateral_swing'].abs().mean():.3f} m")
-        col_v3.metric("Pitch Type", v_weather.get('pitch_type', 'Unknown'))
-        col_v4.metric("Avg Humidity", f"{v_weather.get('humidity_pct', 0):.0f}%")
-        col_v5.metric("Avg Temp", f"{v_weather.get('temperature_c', 0):.0f}°C")
-        
-        st.markdown("---")
-        # Venue specific chart
-        fig_v = px.histogram(v_physics, x="lateral_swing", title=f"Swing Distribution at {selected_venue}", 
-                             color_discrete_sequence=["#ff9900"])
-        fig_v.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-        st.plotly_chart(fig_v, use_container_width=True)
+        st.markdown("#### Stadium Stats (Conditions & Intelligence)")
+        if len(df_stadiums) > 0:
+            stadium_list = sorted(df_stadiums["stadium_name"].unique())
+            selected_stadium = st.selectbox("Select Stadium", options=stadium_list, index=0)
+            
+            s_row = df_stadiums[df_stadiums["stadium_name"] == selected_stadium].iloc[0]
+            
+            st.markdown(f"**{s_row['stadium_name']}, {s_row['city']} ({s_row['country']})**")
+            
+            st.markdown("##### 🏟️ Pitch & Conditions")
+            col_s1, col_s2, col_s3, col_s4 = st.columns(4)
+            col_s1.metric("Pitch Type", str(s_row.get('pitch_type', 'N/A')))
+            col_s2.metric("Pace Assistance", str(s_row.get('pace_assistance', 'N/A')))
+            col_s3.metric("Spin Assistance", str(s_row.get('spin_assistance', 'N/A')))
+            col_s4.metric("Seam Movement", str(s_row.get('seam_movement', 'N/A')))
+            
+            st.markdown("##### 🌤️ Environment & Match History")
+            col_s5, col_s6, col_s7, col_s8 = st.columns(4)
+            col_s5.metric("Avg 1st Innings Score", int(s_row.get('average_1st_innings_score', 0)))
+            col_s6.metric("Toss Advantage", str(s_row.get('toss_advantage', 'N/A')))
+            col_s7.metric("Dew Factor", str(s_row.get('dew_factor', 'N/A')))
+            col_s8.metric("Avg Temp", f"{s_row.get('average_temperature_c', 0)}°C")
+            
+            st.markdown("---")
+            
+            # Display Physics data if available for this venue
+            df_venue_physics = pd.merge(fact_deliveries, dim_match, on="match_id", how="inner")
+            # Try to match the venue name
+            matched_physics = df_venue_physics[df_venue_physics['venue'].str.contains(selected_stadium.split()[0], case=False, na=False)]
+            if len(matched_physics) > 0:
+                fig_v = px.histogram(matched_physics, x="lateral_swing", title=f"Hawkeye Swing Distribution at {selected_stadium}", 
+                                     color_discrete_sequence=["#ff9900"])
+                fig_v.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=350)
+                st.plotly_chart(fig_v, use_container_width=True)
+            else:
+                st.info("No Hawkeye physics data available for this stadium yet.")
+                
+        else:
+            st.error("Stadiums dataset not found.")
 
     with tab4:
         st.markdown("#### Executive Overview")
@@ -1529,6 +1650,7 @@ elif page == "Data Visualisation":
         col4.metric("Anomalies Detected", f"{len(fact_anomalies):,}")
         
         st.markdown("#### Venue Swing Analysis")
+        df_venue_physics = pd.merge(fact_deliveries, dim_match, on="match_id", how="inner")
         venue_swing = df_venue_physics.groupby("venue")["lateral_swing"].mean().reset_index().sort_values(by="lateral_swing", ascending=False)
         fig_bar = px.bar(venue_swing, x="lateral_swing", y="venue", orientation="h",
                          color="lateral_swing", color_continuous_scale="Blues")
