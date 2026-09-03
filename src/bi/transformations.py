@@ -31,6 +31,50 @@ def run_bi_transformations():
     dim_weather.rename(columns={'match_id': 'weather_id'}, inplace=True)
     dim_weather.to_parquet(BI_OUT_DIR / "dim_weather.parquet", index=False)
 
+    # dim_batter
+    dim_batter = df[['batter_id', 'batter', 'right_handed_bat']].drop_duplicates(subset=['batter_id']).copy()
+    
+    # 1. Integrate Wikipedia Centuries Dataset
+    wiki_path = ROOT_DIR / "data" / "raw" / "wiki_centuries.csv"
+    dim_batter['career_100s'] = 0
+    if wiki_path.exists():
+        df_wiki = pd.read_csv(wiki_path)
+        wiki_dict = df_wiki.set_index('Player')['Total'].to_dict()
+        
+        for idx, row in dim_batter.iterrows():
+            b_name = str(row['batter']).strip()
+            
+            # Exact match
+            if b_name in wiki_dict:
+                dim_batter.at[idx, 'career_100s'] = wiki_dict[b_name]
+                continue
+                
+            # Fuzzy/Partial match (e.g. "V Kohli" matches "Virat Kohli")
+            parts = b_name.split()
+            if len(parts) >= 2:
+                last_name = parts[-1]
+                first_init = parts[0][0]
+                
+                for k_name, total_100s in wiki_dict.items():
+                    k_parts = k_name.split()
+                    if len(k_parts) >= 2:
+                        if k_parts[-1] == last_name and k_parts[0][0] == first_init:
+                            dim_batter.at[idx, 'career_100s'] = total_100s
+                            break
+                
+    # 2. Integrate Howstat PDF Extracted Data
+    howstat_path = ROOT_DIR / "data" / "raw" / "howstat_dismissals.csv"
+    if howstat_path.exists():
+        df_howstat = pd.read_csv(howstat_path)
+        dim_batter = pd.merge(dim_batter, df_howstat, left_on='batter', right_on='Player', how='left')
+        dim_batter.drop(columns=['Player'], inplace=True)
+    else:
+        dim_batter['dismissed_bowled_pct'] = 0.0
+        dim_batter['dismissed_lbw_pct'] = 0.0
+        dim_batter['dismissed_caught_behind_pct'] = 0.0
+        
+    dim_batter.to_parquet(BI_OUT_DIR / "dim_batter.parquet", index=False)
+
     # ---------------------------------------------------------
     # 2. CREATE FACTS
     # ---------------------------------------------------------
@@ -40,7 +84,8 @@ def run_bi_transformations():
     fact_cols = [
         'delivery_id', 'match_id', 'bowler_id', 'batter_id', 
         'over_num', 'ball_in_over', 'ball_speed_kmh', 'pitch_x', 'pitch_y', 
-        'stumps_x', 'stumps_y', 'lateral_swing', 'runs', 'extras', 'is_wide', 'is_no_ball'
+        'stumps_x', 'stumps_y', 'lateral_swing', 'runs', 'extras', 'is_wide', 'is_no_ball',
+        'dismissal_details', 'batter_runs'
     ]
     # Only keep columns that actually exist in the dataframe to prevent errors
     valid_fact_cols = [c for c in fact_cols if c in df.columns]

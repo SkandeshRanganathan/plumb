@@ -16,6 +16,7 @@ import pickle
 import json
 import numpy as np
 import pandas as pd
+from scraper.live_context import get_live_context
 import plotly.graph_objects as go
 import plotly.express as px
 import streamlit as st
@@ -411,7 +412,7 @@ with st.sidebar:
         "Experiment Results",
         "Ablation Study",
         "Anomaly Explorer",
-        "Business Intelligence",
+        "Data Visualisation",
         "About / Research",
     ])
 
@@ -1369,14 +1370,14 @@ elif page == "Anomaly Explorer":
 
 # ── PAGE: Business Intelligence ───────────────────────────────────────────────
 
-elif page == "Business Intelligence":
-    st.markdown("### Business Intelligence")
-    st.markdown("Interactive analytics powered by the Data Mart Parquet files (Star Schema)")
+elif page == "Data Visualisation":
+    st.markdown("### 📊 Data Visualisation")
+    st.markdown("Broadcast-level analytics combining physics data, Kaggle career records, and Howstat dismissal profiles.")
     
     # Load BI Data
     bi_dir = ROOT / "data" / "bi"
     if not (bi_dir / "fact_deliveries.parquet").exists():
-        st.warning("BI Data Mart not found. Please run `src/bi/transformations.py` to generate the Star Schema.")
+        st.warning("BI Data Mart not found.")
         st.stop()
         
     @st.cache_data
@@ -1384,54 +1385,155 @@ elif page == "Business Intelligence":
         fact = pd.read_parquet(bi_dir / "fact_deliveries.parquet")
         dim_b = pd.read_parquet(bi_dir / "dim_bowler.parquet")
         dim_m = pd.read_parquet(bi_dir / "dim_match.parquet")
+        dim_w = pd.read_parquet(bi_dir / "dim_weather.parquet")
+        dim_bat = pd.read_parquet(bi_dir / "dim_batter.parquet")
         fact_a = pd.read_parquet(bi_dir / "fact_anomalies.parquet")
-        return fact, dim_b, dim_m, fact_a
+        return fact, dim_b, dim_m, dim_w, dim_bat, fact_a
         
-    fact_deliveries, dim_bowler, dim_match, fact_anomalies = load_bi_data()
+    fact_deliveries, dim_bowler, dim_match, dim_weather, dim_batter, fact_anomalies = load_bi_data()
     
-    # KPIs
-    st.markdown("#### Executive Overview")
-    col1, col2, col3, col4 = st.columns(4)
+    # Live Context Integration
+    st.markdown("---")
+    st.markdown("#### 🔴 Live Match Context Simulator")
+    live_url = st.text_input("Cricbuzz Live Score URL:", placeholder="e.g. https://www.cricbuzz.com/live-cricket-scores/...")
     
-    # Use standard Streamlit metrics to blend perfectly with the app
-    col1.metric("Total Deliveries", f"{len(fact_deliveries):,}")
-    col2.metric("Avg Speed (kph)", f"{fact_deliveries['ball_speed_kmh'].mean():.1f}")
-    col3.metric("Avg Lateral Swing (m)", f"{fact_deliveries['lateral_swing'].mean():.3f}")
-    col4.metric("Anomalies Detected", f"{len(fact_anomalies):,}")
-        
+    live_batters = []
+    if live_url:
+        with st.spinner("Scraping Live Match State..."):
+            try:
+                from scraper.live_context import get_live_context
+                context = get_live_context(live_url)
+                if context["success"]:
+                    live_batters = context["batters"]
+                    st.success("✅ Live Data Successfully Scraped")
+                    st.markdown(f"**Match:** {context['title']}")
+                    st.markdown(f"**Live Score & Commentary Summary:** {context['description']}")
+                else:
+                    st.error("Could not parse match context from URL. (Check URL format)")
+            except Exception as e:
+                st.error(f"Error scraping data: {e}")
+                
     st.markdown("---")
     
-    # Venue Bar Chart
-    st.markdown("#### Venue Swing Analysis")
-    df_venue = pd.merge(fact_deliveries, dim_match, on="match_id", how="inner")
-    df_venue["venue"] = df_venue["venue"].fillna("Unknown Stadium")
-    venue_swing = df_venue.groupby("venue")["lateral_swing"].mean().reset_index().sort_values(by="lateral_swing", ascending=False).dropna()
-    fig_bar = px.bar(venue_swing, x="lateral_swing", y="venue", orientation="h", title="Average Lateral Swing by Venue (meters)",
-                     color="lateral_swing", color_continuous_scale="Blues")
-    fig_bar.update_layout(height=400, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
-    st.plotly_chart(fig_bar, use_container_width=True)
+    tab1, tab2, tab3, tab4 = st.tabs(["Batter Intelligence", "Bowler Intelligence", "Stadium Stats", "Executive Overview"])
     
-    st.markdown("---")
-    
-    # Bowler Intelligence Deep Dive
-    st.markdown("#### Bowler Intelligence Deep-Dive")
-    bowler_list = sorted(dim_bowler['bowler'].dropna().unique())
-    selected_bowler = st.selectbox("Select Bowler", options=bowler_list, index=bowler_list.index("Bhuvneshwar Kumar") if "Bhuvneshwar Kumar" in bowler_list else 0)
-    
-    # Filter data for selected bowler
-    bowler_id = dim_bowler[dim_bowler['bowler'] == selected_bowler]['bowler_id'].values[0]
-    bowler_data = fact_deliveries[fact_deliveries['bowler_id'] == bowler_id].dropna(subset=['ball_speed_kmh', 'lateral_swing'])
-    
-    if len(bowler_data) > 0:
-        fig_scatter = px.scatter(bowler_data, x="ball_speed_kmh", y="lateral_swing", 
-                                 title=f"Physics Footprint: {selected_bowler} ({len(bowler_data):,} deliveries)",
-                                 labels={"ball_speed_kmh": "Speed (km/h)", "lateral_swing": "Lateral Swing (m)"})
-        fig_scatter.update_traces(marker=dict(color="#00d4ff", size=6, opacity=0.7))
-        fig_scatter.update_layout(height=500, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    with tab1:
+        st.markdown("#### Batter Intelligence: Pitchmap & Weakness Profiler")
+        batter_list = sorted(dim_batter['batter'].dropna().unique())
         
-        st.plotly_chart(fig_scatter, use_container_width=True)
-    else:
-        st.info("No physics data available for this bowler.")
+        # Pre-select batter from live match if available
+        default_index = 0
+        if live_batters:
+            for i, b in enumerate(batter_list):
+                if any(lb in b for lb in live_batters) or any(b in lb for lb in live_batters):
+                    default_index = i
+                    break
+        elif "V Kohli" in batter_list:
+            default_index = batter_list.index("V Kohli")
+            
+        selected_batter = st.selectbox("Select Batter", options=batter_list, index=default_index)
+        
+        # Filter Data
+        batter_row = dim_batter[dim_batter['batter'] == selected_batter].iloc[0]
+        b_id = batter_row['batter_id']
+        b_data = fact_deliveries[fact_deliveries['batter_id'] == b_id].copy()
+        
+        # Feature Engineering for Pitchmap
+        if len(b_data) > 0:
+            b_data['Outcome'] = 'Dot/Single'
+            b_data.loc[b_data['batter_runs'] >= 4, 'Outcome'] = 'Boundary'
+            b_data.loc[b_data['dismissal_details'].notna(), 'Outcome'] = 'Dismissal'
+            
+            # Draw Pitchmap
+            fig_pitch = px.scatter(b_data, x='pitch_y', y='pitch_x', color='Outcome',
+                                  color_discrete_map={'Dismissal': 'red', 'Boundary': '#00cc66', 'Dot/Single': 'rgba(255,255,255,0.2)'},
+                                  title=f"Pitchmap (Deliveries Faced by {selected_batter})",
+                                  labels={'pitch_y': 'Width (m) [Negative=Offside]', 'pitch_x': 'Length (m)'})
+            
+            fig_pitch.update_yaxes(autorange="reversed") 
+            fig_pitch.update_traces(marker=dict(size=8))
+            fig_pitch.update_layout(height=500, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,255,0,0.05)")
+            st.plotly_chart(fig_pitch, use_container_width=True)
+            
+            # Kaggle & PDF Stats
+            st.markdown("#### Career & Dismissal Profile")
+            col_a, col_b, col_c, col_d = st.columns(4)
+            col_a.metric("Career Centuries (Kaggle)", int(batter_row.get('career_100s', 0)))
+            
+            bowled_pct = batter_row.get('dismissed_bowled_pct', 0)
+            lbw_pct = batter_row.get('dismissed_lbw_pct', 0)
+            caught_pct = batter_row.get('dismissed_caught_behind_pct', 0)
+            
+            if pd.notna(bowled_pct) and bowled_pct > 0:
+                col_b.metric("Bowled % (Howstat)", f"{bowled_pct}%")
+            if pd.notna(lbw_pct) and lbw_pct > 0:
+                col_c.metric("LBW % (Howstat)", f"{lbw_pct}%")
+            if pd.notna(caught_pct) and caught_pct > 0:
+                col_d.metric("Caught Behind %", f"{caught_pct}%")
+        else:
+            st.info("No Hawkeye data for this batter.")
+            
+    with tab2:
+        st.markdown("#### Bowler Intelligence Deep-Dive")
+        bowler_list = sorted(dim_bowler['bowler'].dropna().unique())
+        selected_bowler = st.selectbox("Select Bowler", options=bowler_list, index=0)
+        
+        bowler_id = dim_bowler[dim_bowler['bowler'] == selected_bowler]['bowler_id'].values[0]
+        bowler_data = fact_deliveries[fact_deliveries['bowler_id'] == bowler_id].dropna(subset=['ball_speed_kmh', 'lateral_swing'])
+        
+        if len(bowler_data) > 0:
+            fig_scatter = px.scatter(bowler_data, x="ball_speed_kmh", y="lateral_swing", 
+                                     title=f"Physics Footprint: {selected_bowler}",
+                                     labels={"ball_speed_kmh": "Speed (km/h)", "lateral_swing": "Lateral Swing (m)"})
+            fig_scatter.update_traces(marker=dict(color="#00d4ff", size=6, opacity=0.7))
+            fig_scatter.update_layout(height=500, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+            st.plotly_chart(fig_scatter, use_container_width=True)
+            
+    with tab3:
+        st.markdown("#### Stadium Stats (Conditions & Physics)")
+        # Merge venue and weather
+        df_venue_master = pd.merge(dim_match, dim_weather, on="weather_id", how="inner")
+        # Merge with physics
+        df_venue_physics = pd.merge(fact_deliveries, dim_match, on="match_id", how="inner")
+        
+        df_venue_master["venue"] = df_venue_master["venue"].fillna("Unknown Stadium")
+        df_venue_physics["venue"] = df_venue_physics["venue"].fillna("Unknown Stadium")
+        
+        venue_list = sorted(df_venue_master["venue"].unique())
+        selected_venue = st.selectbox("Select Stadium", options=venue_list, index=0)
+        
+        # Calculate Stats for this venue
+        v_weather = df_venue_master[df_venue_master["venue"] == selected_venue].iloc[0]
+        v_physics = df_venue_physics[df_venue_physics["venue"] == selected_venue]
+        
+        col_v1, col_v2, col_v3, col_v4, col_v5 = st.columns(5)
+        col_v1.metric("Avg Lateral Swing", f"{v_physics['lateral_swing'].mean():.3f} m")
+        col_v2.metric("Avg Spin/Deviation", f"{v_physics['lateral_swing'].abs().mean():.3f} m")
+        col_v3.metric("Pitch Type", v_weather.get('pitch_type', 'Unknown'))
+        col_v4.metric("Avg Humidity", f"{v_weather.get('humidity_pct', 0):.0f}%")
+        col_v5.metric("Avg Temp", f"{v_weather.get('temperature_c', 0):.0f}°C")
+        
+        st.markdown("---")
+        # Venue specific chart
+        fig_v = px.histogram(v_physics, x="lateral_swing", title=f"Swing Distribution at {selected_venue}", 
+                             color_discrete_sequence=["#ff9900"])
+        fig_v.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_v, use_container_width=True)
+
+    with tab4:
+        st.markdown("#### Executive Overview")
+        col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Deliveries", f"{len(fact_deliveries):,}")
+        col2.metric("Avg Speed (kph)", f"{fact_deliveries['ball_speed_kmh'].mean():.1f}")
+        col3.metric("Avg Lateral Swing (m)", f"{fact_deliveries['lateral_swing'].mean():.3f}")
+        col4.metric("Anomalies Detected", f"{len(fact_anomalies):,}")
+        
+        st.markdown("#### Venue Swing Analysis")
+        venue_swing = df_venue_physics.groupby("venue")["lateral_swing"].mean().reset_index().sort_values(by="lateral_swing", ascending=False)
+        fig_bar = px.bar(venue_swing, x="lateral_swing", y="venue", orientation="h",
+                         color="lateral_swing", color_continuous_scale="Blues")
+        fig_bar.update_layout(height=400, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+        st.plotly_chart(fig_bar, use_container_width=True)
 
 
 elif page == "About / Research":
