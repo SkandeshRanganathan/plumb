@@ -122,6 +122,30 @@ To view the analytics dashboard, open Power BI Desktop, import the Parquet files
 For a full breakdown of the analytical metrics and table structures, please refer to the docs/BI_DATA_DICTIONARY.md.
 
 
+# Analytics & Business Intelligence
+
+A comprehensive **Data Analytics & Business Intelligence (BI)** layer has been added to PLUMB to translate raw physics and ML outputs into actionable insights.
+
+## Architecture
+- **Transformation (Python/Pandas)**: The massive master_dataset.parquet is sliced into an optimized **Star Schema** (act_deliveries, dim_bowler, dim_match, etc.) located in data/bi/.
+- **Execution Engine (DuckDB)**: Advanced analytical SQL queries (CTEs, Window Functions, Ranking) execute directly against the Parquet files via DuckDB (src/bi/execute_sql.py) without requiring a heavy Postgres server.
+- **Presentation (Power BI)**: A professional, interactive Power BI dashboard utilizing complex **DAX Measures** connects directly to the Parquet schema.
+
+## Generating the BI Data
+` ash
+# Generate the optimized Star Schema Parquet files
+python src/bi/transformations.py
+
+# Execute advanced SQL analytics engine
+python src/bi/execute_sql.py
+`
+
+## Power BI Integration
+To view the analytics dashboard, open Power BI Desktop, import the Parquet files from data/bi/, establish the 1-to-many Star Schema relationships in the Model View, and implement the DAX measures outlined in powerbi/dax_measures.md.
+
+For a full breakdown of the analytical metrics and table structures, please refer to the docs/BI_DATA_DICTIONARY.md.
+
+
 ## Power BI Dashboard Showcase
 
 Below are previews of the dynamic Business Intelligence dashboard built on top of the physics and ML data, demonstrating complete Data Analytics capabilities.
@@ -131,3 +155,24 @@ Below are previews of the dynamic Business Intelligence dashboard built on top o
 
 ### Bowler Intelligence Deep-Dive (Bhuvneshwar Kumar)
 ![Bowler Intelligence Scatter Plot](assets/dashboard_bowler.png)
+
+### Batter Runs Decomposition Tree (Steve Smith)
+![Decomposition Tree - Steve Smith](assets/decomp_tree_smith.jpg)
+
+### Batter Runs Decomposition Tree (Virat Kohli)
+![Decomposition Tree - Virat Kohli](assets/decomp_tree_kohli.jpg)
+
+### "Magic Ball" Anomaly Scatter Plot (Physics Outliers)
+![Magic Ball Anomaly Scatter Plot](assets/scatter_anomalies.jpg)
+
+### AI Physics Analyzer: Key Influencer Segments
+![Key Influencer Segments](assets/key_influencer_segments.jpg)
+
+### AI Physics Analyzer: Key Influencer Bar Chart
+![Key Influencer Bars](assets/key_influencer_bars.jpg)
+
+### Geospatial Global Stadium Map (Pitch Type Legend)
+![Stadium Map by Pitch Type](assets/stadium_map_pitch_type.jpg)
+
+### Geospatial Global Stadium Map (Stadium Legend)
+![Stadium Map by Name](assets/stadium_map_default.jpg)
