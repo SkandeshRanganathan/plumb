@@ -157,13 +157,16 @@ Below are previews of the dynamic Business Intelligence dashboard built on top o
 ![Bowler Intelligence Scatter Plot](assets/dashboard_bowler.png)
 
 ### Batter Runs Decomposition Tree (Steve Smith)
-![Decomposition Tree - Steve Smith](assets/decomp_tree_smith.jpg)
+![Decomposition Tree - Steve Smith](assets/smith.jpg)
 
 ### Batter Runs Decomposition Tree (Virat Kohli)
-![Decomposition Tree - Virat Kohli](assets/decomp_tree_kohli.jpg)
+![Decomposition Tree - Virat Kohli](kohli.jpg)
 
-### "Magic Ball" Anomaly Scatter Plot (Physics Outliers)
-![Magic Ball Anomaly Scatter Plot](assets/scatter_anomalies.jpg)
+### "Magic Ball" Anomaly Scatter Plot (Physics Outliers - Bowler Legend)
+![Magic Ball Anomaly Scatter Plot](anomaly1.jpg)
+
+### "Magic Ball" Anomaly Scatter Plot (Physics Outliers - Bowling Style Legend)
+![Magic Ball Anomaly Scatter Plot](anomaly2.jpg)
 
 ### AI Physics Analyzer: Key Influencer Segments
 ![Key Influencer Segments](assets/key_influencer_segments.jpg)
